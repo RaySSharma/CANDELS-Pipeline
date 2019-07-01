@@ -21,8 +21,14 @@ import scipy as sp
 
 
 #modify filename and metadata from input image, if desired
-def output_pristine_fits_image(original_image,out_image):
+def output_pristine_fits_image(image_file):
 
+    #erg/s/cm^2
+    #probably a lambda*flambda
+    #input images from Ray Sharma are in log this unit
+    fo=fits.open(image_file,'append')
+    
+    
     return
 
 
@@ -55,3 +61,5 @@ def convolve_with_fwhm(in_image, out_image, fwhm_arcsec=0.10):
 def add_simple_noise(in_image, out_image, sb=25.0):
 
     return
+
+
