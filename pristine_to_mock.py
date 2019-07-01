@@ -3,21 +3,16 @@ import astropy
 import astropy.io.ascii as ascii
 import astropy.io.fits as fits
 import numpy as np
-#np.random.standard_normal(g.shape)
 import matplotlib
 import matplotlib.pyplot as pyplot
 import astropy.units as u
 import glob
 import sys
 import os
-
 import photutils
 from astropy.stats import gaussian_fwhm_to_sigma
-
 import scipy.ndimage
 import scipy as sp
-#res=sp.ndimage.filters.gaussian_filter(b,sigma,output=sB)
-#import astropy.convolution.convolve as convolve
 
 
 #modify filename and metadata from input image, if desired
@@ -68,7 +63,7 @@ def output_pristine_fits_image(image_file,out_file):
     
     return
 
-
+#Accepts PSF FWHM in arcseconds -- this FWHM can be estimated as the observatory diffraction limit at the associated wavelength
 def convolve_with_fwhm(in_image, fwhm_arcsec=0.10):
 
     #open pristine image fits file
@@ -101,9 +96,34 @@ def convolve_with_fwhm(in_image, fwhm_arcsec=0.10):
     
     return
 
+#accepts sb_maglim value which corresponds to magnitudes per square arcsecond
+def add_simple_noise(in_image, sb_maglim=25.0, sb_label='25'):
 
-def add_simple_noise(in_image, out_image, sb=25.0):
+    #algorithm from Snyder et al. (2019)
+    #            sigma_nJy = (2.0**(-0.5))*((1.0e9)*(3631.0/5.0)*10.0**(-0.4*maglim))*analysis_object.pixsize_arcsec[i]*(3.0*analysis_object.psf_fwhm_arcsec[i])
 
+    in_fo=fits.open(in_image,'append')
+
+    image_in=in_fo['MockImage_Noiseless'].data
+    header_in=in_fo['MockImage_Noiseless'].header
+
+    sigma_njy=(2.0**(-0.5))*((1.0e9)*(3631.0/5.0)*10.0**(-0.4*sb_maglim))*header_in['PIXSIZE']*(3.0*header_in['FWHM'])
+    
+    npix=image_in.shape[0]
+    
+    noise_image = sigma_njy*np.random.randn(npix,npix)
+
+    image_out=image_in + noise_image
+
+    hdu_out = fits.ImageHDU(image_out,header=header_in)
+    hdu_out.header['EXTNAME']='MockImage_SB'+sb_label
+    hdu_out.header['SBLIM']=(sb_maglim,'mag/arcsec^2')
+    hdu_out.header['RMSNOISE']=(sigma_njy,'nanojanskies')
+
+    in_fo.append(hdu_out)
+    in_fo.flush()
+    
+    
     return
 
 
