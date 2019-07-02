@@ -118,7 +118,7 @@ def deblend_sources(in_image,segm_obj,kernel,ext_name='MockImage_SB25',**kwargs)
 
 
 #Run morphology code
-def run_statmorph(in_image,sourceid=0,ext_name='MockImage_SB25',seg_name='DEBLEND'):
+def run_statmorph(in_image,ext_name='MockImage_SB25',seg_name='DEBLEND'):
 
     #https://statmorph.readthedocs.io/en/latest/installation.html
 
