@@ -14,8 +14,10 @@ from astropy.stats import gaussian_fwhm_to_sigma
 from astropy.convolution import Gaussian2DKernel
 import scipy.ndimage
 import scipy as sp
+import statmorph
 
 
+#Run basic source detection
 def detect_sources(in_image,ext_name='MockImage_SB25',**kwargs):
 
     try:
@@ -74,7 +76,7 @@ def detect_sources(in_image,ext_name='MockImage_SB25',**kwargs):
     return segmap_obj, kernel
 
 
-
+#Run PhotUtils Deblender
 def deblend_sources(in_image,segm_obj,kernel,ext_name='MockImage_SB25',**kwargs):
 
     try:
@@ -115,10 +117,20 @@ def deblend_sources(in_image,segm_obj,kernel,ext_name='MockImage_SB25',**kwargs)
     return
 
 
+#Run morphology code
+def run_statmorph(in_image,sourceid=0,ext_name='MockImage_SB25',seg_name='DEBLEND'):
 
-def run_statmorph():
+    #https://statmorph.readthedocs.io/en/latest/installation.html
 
+    try:
+        this_fo=fits.open(in_image,'append')
+        this_hdu=this_fo[ext_name]
+        segm_hdu=this_fo[seg_name]
+    except:
+        print('HDU not found! ', in_image, ext_name)
+        return
 
+    source_morph=statmorph.source_morphology(this_hdu.data,segm_hdu.data,gain=1000)
 
-    return
+    return source_morph
 
