@@ -45,9 +45,14 @@ def detect_sources(in_image,ext_name='MockImage_SB25',**kwargs):
     kernel = Gaussian2DKernel(sigma, x_size=nsize, y_size=nsize)
 
     #may consider inputting an error image here -- can be computed with photutils plus a GAIN keyword -- ratio of flux units to counts
+
+    #https://photutils.readthedocs.io/en/stable/segmentation.html
     
+    #https://photutils.readthedocs.io/en/stable/api/photutils.segmentation.detect_sources.html#photutils.segmentation.detect_sources
     segmap_obj = photutils.detect_sources(this_hdu.data, thresh, npixels=npixels, filter_kernel=kernel, **kwargs)
     segmap = segmap_obj.data
+
+    #https://photutils.readthedocs.io/en/stable/api/photutils.segmentation.source_properties.html#photutils.segmentation.source_properties
     props = photutils.source_properties(this_hdu.data, segmap)
 
     props_table=astropy.table.Table(props.to_table())
@@ -79,11 +84,14 @@ def deblend_sources(in_image,segm_obj,kernel,ext_name='MockImage_SB25',**kwargs)
         print('HDU not found! ', in_image, ext_name)
         return
 
-    
+
+    #https://photutils.readthedocs.io/en/stable/api/photutils.segmentation.deblend_sources.html#photutils.segmentation.deblend_sources
     segm_deblend = photutils.deblend_sources(this_hdu.data, segm_obj, npixels=10,
                                              filter_kernel=kernel, nlevels=32,
                                              contrast=0.001)
     segmap = segm_deblend.data
+
+    #https://photutils.readthedocs.io/en/stable/api/photutils.segmentation.source_properties.html#photutils.segmentation.source_properties    
     props = photutils.source_properties(this_hdu.data, segmap)
 
     props_table=props.to_table()
