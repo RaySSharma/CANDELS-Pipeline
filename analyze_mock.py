@@ -3,8 +3,6 @@ import astropy
 import astropy.io.ascii as ascii
 import astropy.io.fits as fits
 import numpy as np
-import matplotlib
-import matplotlib.pyplot as pyplot
 import astropy.units as u
 import glob
 import sys
