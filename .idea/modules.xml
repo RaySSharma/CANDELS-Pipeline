@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/../AGN-Obscuration/.idea/AGN-Obscuration.iml" filepath="$PROJECT_DIR$/../AGN-Obscuration/.idea/AGN-Obscuration.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/CANDELS-Pipeline.iml" filepath="$PROJECT_DIR$/.idea/CANDELS-Pipeline.iml" />
     </modules>
   </component>
