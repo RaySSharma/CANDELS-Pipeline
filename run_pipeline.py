@@ -1,22 +1,56 @@
+#!/usr/bin/env python3
+
 import glob
+import pristine_to_mock as ptm
+import analyze_mock as am
 
-# {filter: central wavelength [micron], instrument resolution [arcsec]}
+DEBLEND = True
+
+# {filter: central wavelength [micron], instrument resolution [arcsec], gain}
 filt_wheel = {
-    'ACS_F814W': [0.8353, 0.05],
-    'WFC3_F160W': [1.5369, 0.13],
-    'ACS_F606W': [0.5907, 0.05]
+    'ACS_F814W': [0.8353, 0.05, 1.55],
+    'WFC3_F160W': [1.5369, 0.13, 2.4],
+    'ACS_F606W': [0.5907, 0.05, 1.55]
 }
+# mag/arcsec^2
+detection_limits = [25, 27]
 
-image_loc = '/home/rss230/AGN-Obscuration/outputs/BH+Hopkins/*/*/ACS_F814W/1/'
+# List of morphological parameters to calculate in statmorph
+morph_params = {'GINI': 'gini',
+                'M20' : 'm20',
+                'CONC': 'concentration',
+                'ASYM': 'asymmetry',
+                'SMOOTH': 'smoothness',
+                'SERSIC_N': 'sersic_n',
+                'M': 'multimode',
+                'D': 'deviation',
+                'I': 'intensity'}
+
+#image_loc = '/home/rss230/AGN-Obscuration/outputs/BH+Hopkins/*/*/ACS_F814W/1/'
+image_loc = './data/'
 image_files = glob.glob(image_loc+'*.image.fits')
 
 for image in image_files:
-    ffout = image[:-5]+'.mock.fits'
-    output_pristine_fits_image(ff, ffout, filt_wheel)
+    print('Image:', image)
+    for lim in detection_limits:
+        image_mock = image[:-5] + '.SB' + str(lim) + '.fits'
+        print('SB:', lim, 'mag arcsec^-2')
+        print('Mock Image:', image_mock)
 
-    convolve_with_fwhm(ffout, filt_wheel)
-    add_simple_noise(ffout, sb_maglim=25.0, sb_label='25', alg='Snyder2019')
-    add_simple_noise(ffout, sb_maglim=27.0, sb_label='27', alg='Snyder2019')
+        ptm.output_pristine_fits_image(image, image_mock, filt_wheel)
 
+        ext_name = 'MockImage'
+        ptm.convolve_with_fwhm(image_mock, filt_wheel)
+        ptm.add_simple_noise(image_mock, sb_maglim=lim, ext_name=ext_name, alg='Snyder2019')
 
+        seg, kernel, errmap = am.detect_sources(image_mock, ext_name=ext_name)
 
+        if DEBLEND:
+            seg = am.deblend_sources(image_mock, seg, kernel, errmap, ext_name=ext_name)
+            source_morph = am.source_morphology(image_mock, seg, filt_wheel, ext_name=ext_name, props_ext_name='DEBLEND_PROPS')
+        else:
+            source_morph = am.source_morphology(image_mock, seg, filt_wheel, ext_name=ext_name, props_ext_name='SEGMAP_PROPS')
+
+        am.save_morph_params(image_mock, source_morph, **morph_params)
+
+        save_morph_hdf()

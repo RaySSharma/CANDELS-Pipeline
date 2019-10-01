@@ -1,103 +1,88 @@
 # code to do source detection, segmentation, and morphology measurements from simple mock images
 import astropy
-import astropy.io.ascii as ascii
 import astropy.io.fits as fits
 import numpy as np
-import astropy.units as u
-import glob
-import sys
-import os
 import photutils
+from photutils.utils import calc_total_error
 from astropy.stats import gaussian_fwhm_to_sigma
 from astropy.convolution import Gaussian2DKernel
-import scipy.ndimage
-import scipy as sp
 import statmorph
 
-
 # Run basic source detection
-def detect_sources(in_image, ext_name='MockImage_SB25', **kwargs):
-    try:
-        this_fo = fits.open(in_image, 'append')
-        this_hdu = this_fo[ext_name]
-    except:
-        print('HDU not found! ', in_image, ext_name)
-        return
-
-    rms = this_hdu.header['RMSNOISE']
-    thr_rms = 1.3
-    thresh = thr_rms * rms
-    npixels = 10
+def detect_sources(in_image, ext_name, **kwargs):
+    fo = fits.open(in_image, 'append')
+    hdu = fo[ext_name]
 
     # build kernel for pre-filtering.  How big?
     # don't assume redshift knowledge here
     typical_kpc_per_arcsec = 8.0
 
-    # abzp = image_hdu.header['ABZP']
-
     kernel_kpc_fwhm = 5.0
     kernel_arcsec_fwhm = kernel_kpc_fwhm / typical_kpc_per_arcsec
-    kernel_pixel_fwhm = kernel_arcsec_fwhm / this_hdu.header['PIXSIZE']
+    kernel_pixel_fwhm = kernel_arcsec_fwhm / hdu.header['PIXSIZE']
 
     sigma = kernel_pixel_fwhm * gaussian_fwhm_to_sigma
     nsize = int(5 * kernel_pixel_fwhm)
     kernel = Gaussian2DKernel(sigma, x_size=nsize, y_size=nsize)
 
-    # may consider inputting an error image here -- can be computed with photutils plus a GAIN keyword -- ratio of flux units to counts
+    bkg_estimator = photutils.MedianBackground()
+    bkg = photutils.Background2D(hdu.data, (50, 50), bkg_estimator=bkg_estimator)
+    thresh = bkg.background + (3. * bkg.background_rms)
 
-    # https://photutils.readthedocs.io/en/stable/segmentation.html
-
-    # https://photutils.readthedocs.io/en/stable/api/photutils.segmentation.detect_sources.html#photutils.segmentation.detect_sources
-    segmap_obj = photutils.detect_sources(this_hdu.data, thresh, npixels=npixels, filter_kernel=kernel, **kwargs)
+    segmap_obj = photutils.detect_sources(hdu.data, thresh, npixels=10, filter_kernel=kernel, **kwargs)
     segmap = segmap_obj.data
 
-    # https://photutils.readthedocs.io/en/stable/api/photutils.segmentation.source_properties.html#photutils.segmentation.source_properties
-    props = photutils.source_properties(this_hdu.data, segmap)
+    # may consider inputting an error image here -- can be computed with photutils plus a GAIN keyword -- ratio of flux units to counts
+    errmap = calc_total_error(hdu.data, bkg.background_rms, effective_gain=1)
 
-    props_table = astropy.table.Table(props.to_table())
-    # these give problems given their format/NoneType objects
-    props_table.remove_columns(
-        ['sky_centroid', 'sky_centroid_icrs', 'source_sum_err', 'background_sum', 'background_mean',
-         'background_at_centroid'])
+    props = photutils.source_properties(hdu.data, segmap, errmap)
+
+    try:
+        props_table = astropy.table.Table(props.to_table())
+        # these give problems given their format/NoneType objects
+        props_table.remove_columns(
+            ['sky_centroid', 'sky_centroid_icrs', 'source_sum_err', 'background_sum', 'background_mean',
+             'background_at_centroid'])
+    except ValueError:
+        props_table = astropy.table.Table()
 
     # save segmap and info
     nhdu = fits.ImageHDU(np.int32(segmap))
     nhdu.header['EXTNAME'] = 'SEGMAP'
+    fo.append(nhdu)
 
     thdu = fits.BinTableHDU(props_table)
     thdu.header['EXTNAME'] = 'SEGMAP_PROPS'
+    fo.append(thdu)
 
-    this_fo.append(nhdu)
-    this_fo.append(thdu)
-
-    this_fo.flush()
-
-    return segmap_obj, kernel
+    fo.flush()
+    return segmap_obj, kernel, errmap
 
 
 # Run PhotUtils Deblender
-def deblend_sources(in_image, segm_obj, kernel, ext_name='MockImage_SB25', **kwargs):
+def deblend_sources(in_image, segm_obj, kernel, errmap, ext_name, **kwargs):
+    fo = fits.open(in_image, 'append')
+    hdu = fo[ext_name]
+
     try:
-        this_fo = fits.open(in_image, 'append')
-        this_hdu = this_fo[ext_name]
-    except:
-        print('HDU not found! ', in_image, ext_name)
-        return
-
-    # https://photutils.readthedocs.io/en/stable/api/photutils.segmentation.deblend_sources.html#photutils.segmentation.deblend_sources
-    segm_deblend = photutils.deblend_sources(this_hdu.data, segm_obj, npixels=10,
+        segm_obj = photutils.deblend_sources(hdu.data, segm_obj, npixels=10,
                                              filter_kernel=kernel, nlevels=32,
-                                             contrast=0.001)
-    segmap = segm_deblend.data
+                                             contrast=0.01)
+        segmap = segm_obj.data
+    except ValueError as error:
+        print(error, 'Continuing without deblending.')
+        segmap = segm_obj.data
 
-    # https://photutils.readthedocs.io/en/stable/api/photutils.segmentation.source_properties.html#photutils.segmentation.source_properties
-    props = photutils.source_properties(this_hdu.data, segmap)
+    props = photutils.source_properties(hdu.data, segmap, errmap)
 
-    props_table = props.to_table()
-    # these give problems given their format/NoneType objects
-    props_table.remove_columns(
+    try:
+        props_table = astropy.table.Table(props.to_table())
+        # these give problems given their format/NoneType objects
+        props_table.remove_columns(
         ['sky_centroid', 'sky_centroid_icrs', 'source_sum_err', 'background_sum', 'background_mean',
          'background_at_centroid'])
+    except ValueError:
+        props_table = astropy.table.Table()
 
     # save segmap and info
     nhdu = fits.ImageHDU(np.int32(segmap))
@@ -106,26 +91,56 @@ def deblend_sources(in_image, segm_obj, kernel, ext_name='MockImage_SB25', **kwa
     thdu = fits.BinTableHDU(props_table)
     thdu.header['EXTNAME'] = 'DEBLEND_PROPS'
 
-    this_fo.append(nhdu)
-    this_fo.append(thdu)
+    fo.append(nhdu)
+    fo.append(thdu)
 
-    this_fo.flush()
+    fo.flush()
 
-    return
+    return segm_obj
 
 
 # Run morphology code
-def run_statmorph(in_image, ext_name='MockImage_SB25', seg_name='DEBLEND'):
+def source_morphology(in_image, segm_obj, filt_wheel, ext_name, props_ext_name):
     # https://statmorph.readthedocs.io/en/latest/installation.html
-
     try:
-        this_fo = fits.open(in_image, 'append')
-        this_hdu = this_fo[ext_name]
-        segm_hdu = this_fo[seg_name]
+        fo = fits.open(in_image, 'append')
+        hdu = fo[ext_name]
+        seg_props = fo[props_ext_name].data
     except:
         print('HDU not found! ', in_image, ext_name)
         return
 
-    source_morph = statmorph.source_morphology(this_hdu.data, segm_hdu.data, gain=1000)
+    gain = filt_wheel[hdu.header['FILTER']][2]
 
-    return source_morph
+    npix = hdu.data.shape[0]
+    center_slice = segm_obj.data[int(npix / 2) - 2:int(npix / 2) + 2, int(npix / 2) - 2:int(npix / 2) + 2]
+    assert (len(np.unique(center_slice)) == 1)
+
+    try:
+        center_source_id = seg_props['id'][seg_props['id'] == center_slice[0, 0]][0]
+        segmap = segm_obj.data == center_source_id
+
+        source_morph = statmorph.source_morphology(hdu.data, segmap, gain=gain)
+        return source_morph[0]
+
+    except KeyError as error:
+        print('No source found.')
+        return None
+
+
+def save_morph_params(in_image, source_morph, **kwargs):
+    if source_morph is not None:
+        fo = fits.open(in_image, 'append')
+        nhdu = fits.ImageHDU()
+
+        if kwargs is not None:
+            for key, value in kwargs.items():
+                nhdu.header[key] = source_morph[value]
+
+        nhdu.header['EXTNAME'] = 'SOURCE_MORPH'
+
+        fo.append(nhdu)
+
+        fo.flush()
+
+
