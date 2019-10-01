@@ -27,8 +27,7 @@ morph_params = {
     'I': 'intensity'
 }
 
-#image_loc = '/home/rss230/AGN-Obscuration/outputs/BH+Hopkins/*/*/ACS_F814W/1/'
-image_loc = './data/'
+image_loc = '/home/rss230/AGN-Obscuration/outputs/BH+Nenkova/*/*/WFC3_F160W/0/'
 image_files = glob.glob(image_loc + '*.image.fits')
 
 for image in image_files:
