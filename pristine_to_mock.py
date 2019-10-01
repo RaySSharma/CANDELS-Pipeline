@@ -1,4 +1,5 @@
 # code for converting pristine simulated images to realistic mocks
+# - Greg Snyder, Ray Sharma 2019
 
 import numpy as np
 import scipy.ndimage

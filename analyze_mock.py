@@ -1,4 +1,6 @@
 # code to do source detection, segmentation, and morphology measurements from simple mock images
+# - Greg Snyder, Ray Sharma 2019
+
 import astropy
 import astropy.io.fits as fits
 import numpy as np
@@ -7,6 +9,8 @@ from photutils.utils import calc_total_error
 from astropy.stats import gaussian_fwhm_to_sigma
 from astropy.convolution import Gaussian2DKernel
 import statmorph
+from statmorph.utils.image_diagnostics import make_figure
+
 
 # Run basic source detection
 def detect_sources(in_image, ext_name, **kwargs):
@@ -128,7 +132,7 @@ def source_morphology(in_image, segm_obj, filt_wheel, ext_name, props_ext_name):
         return None
 
 
-def save_morph_params(in_image, source_morph, **kwargs):
+def save_morph_params(in_image, source_morph, fig_name, **kwargs):
     if source_morph is not None:
         fo = fits.open(in_image, 'append')
         nhdu = fits.ImageHDU()
@@ -142,5 +146,8 @@ def save_morph_params(in_image, source_morph, **kwargs):
         fo.append(nhdu)
 
         fo.flush()
+
+        fig = make_figure(source_morph)
+        fig.savefig(fig_name, dpi=150)
 
 
