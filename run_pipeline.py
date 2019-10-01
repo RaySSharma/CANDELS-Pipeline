@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 import glob
+
+import matplotlib
+matplotlib.use('Agg')
+
 import pristine_to_mock as ptm
 import analyze_mock as am
 
