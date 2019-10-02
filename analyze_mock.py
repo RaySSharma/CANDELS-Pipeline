@@ -118,7 +118,6 @@ def source_morphology(in_image, segm_obj, filt_wheel, ext_name, props_ext_name):
 
     npix = hdu.data.shape[0]
     center_slice = segm_obj.data[int(npix / 2) - 2:int(npix / 2) + 2, int(npix / 2) - 2:int(npix / 2) + 2]
-    assert (len(np.unique(center_slice)) == 1)
 
     try:
         center_source_id = seg_props['id'][seg_props['id'] == center_slice[0, 0]][0]
