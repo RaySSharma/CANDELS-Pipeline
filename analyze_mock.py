@@ -126,7 +126,7 @@ def source_morphology(in_image, segm_obj, filt_wheel, ext_name, props_ext_name):
         source_morph = statmorph.source_morphology(hdu.data, segmap, gain=gain)
         return source_morph[0]
 
-    except KeyError as error:
+    except IndexError as error:
         print('No source found.')
         return None
 

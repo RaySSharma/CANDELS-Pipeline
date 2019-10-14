@@ -34,14 +34,14 @@ image_loc = '/home/rss230/AGN-Obscuration/outputs/BH+Nenkova/*/*/WFC3_F160W/0/'
 image_files = glob.glob(image_loc + '*.image.fits')
 
 for image in image_files:
-    print('Image:', image)
+    print('Image:', image, flush=True)
     for lim in detection_limits:
         image_mock = image[:-5] + '.SB' + str(lim) + '.fits'
         fig_name = image[:-5] + '.SB' + str(lim) + '.png'
         ext_name = 'MockImage'
 
-        print('SB:', lim, 'mag arcsec^-2')
-        print('Mock Image:', image_mock)
+        print('SB:', lim, 'mag arcsec^-2', flush=True)
+        print('Mock Image:', image_mock, flush=True)
 
         ptm.output_pristine_fits_image(
             image, image_mock, filt_wheel)  # Setup image for mock creation
