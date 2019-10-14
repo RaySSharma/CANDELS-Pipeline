@@ -10,6 +10,7 @@ import astropy.io.fits as fits
 import astropy.units as u
 from astropy.stats import gaussian_fwhm_to_sigma
 
+
 def output_pristine_fits_image(image_file, out_file, filt_wheel):
     # Input image in units lambda*F_lambda [erg/s/cm^2]
     fo = fits.open(image_file, 'readonly')
@@ -71,6 +72,7 @@ def convolve_with_fwhm(in_image, filt_wheel):
 
     image_out = sp.ndimage.filters.gaussian_filter(image_in, sigma_pixels,
                                                    mode='nearest')
+
     hdu_out = fits.ImageHDU(image_out, header=header_in)
     hdu_out.header['FWHMPIX'] = (sigma_pixels / gaussian_fwhm_to_sigma,
                                  'pixels')
@@ -94,7 +96,9 @@ def add_simple_noise(in_image, sb_maglim, ext_name, alg='Snyder2019'):
     header_in = in_fo['MockImage_Noiseless'].header
 
     if alg == 'Snyder2019':  # algorithm from Snyder et al. (2019), SB_limit \sim 5sigma above the background
-        sigma_njy = (2.0**(-0.5)) * ( (1.0e9) * (3631.0 / 5.0) * 10.0**(-0.4 * sb_maglim) ) * header_in['PIXSIZE'] * (3.0 * header_in['FWHM'])
+        sigma_njy = (2.0**(-0.5)) * (
+            (1.0e9) * (3631.0 / 5.0) * 10.0**(-0.4 * sb_maglim)
+        ) * header_in['PIXSIZE'] * (3.0 * header_in['FWHM'])
     else:
         sigma_njy = 0
 
@@ -113,6 +117,7 @@ def add_simple_noise(in_image, sb_maglim, ext_name, alg='Snyder2019'):
     in_fo.flush()
 
     return
+
 
 def make_galaxies_astropy(image_file, flux, galsize, xi, yi, ar, pa, n=4):
     # Written by Steven Boada (2019)
@@ -140,11 +145,7 @@ def make_galaxies_astropy(image_file, flux, galsize, xi, yi, ar, pa, n=4):
     if extent % 2 > 0:
         extent += 1
 
-    ser_model = Sersic2D(r_eff=r_e,
-                         n=n,
-                         ellip=ellip,
-                         theta=theta,
-                         x_0=x_cent,
+    ser_model = Sersic2D(r_eff=r_e, n=n, ellip=ellip, theta=theta, x_0=x_cent,
                          y_0=y_cent)
 
     x = np.arange(-extent / 1., extent / 1., scale) + x_cent / scale
@@ -159,8 +160,8 @@ def make_galaxies_astropy(image_file, flux, galsize, xi, yi, ar, pa, n=4):
     xi, yi = int(xi), int(yi)
     # COLUMNS FIRST -- because FITS are silly
     print(image.shape)
-    image[yi - img.shape[1] // 2: yi + img.shape[1] // 2,
-    xi - img.shape[0] // 2: xi + img.shape[0] // 2] += img
+    image[yi - img.shape[1] // 2:yi + img.shape[1] // 2, xi -
+          img.shape[0] // 2:xi + img.shape[0] // 2] += img
 
     fo['SimulatedImage'].data = image
     fo.writeto(image_file, overwrite=True)
