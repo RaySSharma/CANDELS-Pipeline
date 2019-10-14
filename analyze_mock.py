@@ -31,7 +31,7 @@ def detect_sources(in_image, ext_name, **kwargs):
 
     bkg_estimator = photutils.MedianBackground()
     bkg = photutils.Background2D(hdu.data, (50, 50), bkg_estimator=bkg_estimator)
-    thresh = bkg.background + (3. * bkg.background_rms)
+    thresh = bkg.background + (5. * bkg.background_rms)
 
     segmap_obj = photutils.detect_sources(hdu.data, thresh, npixels=10, filter_kernel=kernel, **kwargs)
     segmap = segmap_obj.data

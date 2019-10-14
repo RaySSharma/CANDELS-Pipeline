@@ -30,7 +30,6 @@ morph_params = {
     'D': 'deviation',
     'I': 'intensity'
 }
-
 image_loc = '/home/rss230/AGN-Obscuration/outputs/BH+Nenkova/*/*/WFC3_F160W/0/'
 image_files = glob.glob(image_loc + '*.image.fits')
 
