@@ -4,6 +4,7 @@
 import astropy
 import astropy.io.fits as fits
 import astropy.table
+import numpy as np
 import photutils
 from photutils.utils import calc_total_error
 from astropy.stats import gaussian_fwhm_to_sigma
@@ -13,7 +14,7 @@ from statmorph.utils.image_diagnostics import make_figure
 
 
 # Run basic source detection
-def detect_sources(in_image, ext_name, **kwargs):
+def detect_sources(in_image, ext_name, filt_wheel, **kwargs):
     fo = fits.open(in_image, 'append')
     hdu = fo[ext_name]
 
@@ -49,7 +50,8 @@ def detect_sources(in_image, ext_name, **kwargs):
         return None, None, None
 
     # Error image can be computed with photutils plus a GAIN keyword -- ratio of flux units to counts
-    errmap = calc_total_error(hdu.data, bkg.background_rms, effective_gain=1)
+    gain = filt_wheel[hdu.header['FILTER']][2]
+    errmap = calc_total_error(hdu.data, bkg.background_rms, effective_gain=gain)
 
     segmap = segmap_obj.data
     props = photutils.source_properties(hdu.data, segmap, errmap)
@@ -122,7 +124,7 @@ def deblend_sources(in_image, segm_obj, kernel, errmap, ext_name):
 
 
 # Run morphology code
-def source_morphology(in_image, segm_obj, filt_wheel, ext_name,
+def source_morphology(in_image, segm_obj, errmap, ext_name,
                       props_ext_name):
     fo = fits.open(in_image, 'append')
     hdu = fo[ext_name]
@@ -130,18 +132,19 @@ def source_morphology(in_image, segm_obj, filt_wheel, ext_name,
 
     if segm_obj is None:
         return None
-    gain = filt_wheel[hdu.header['FILTER']][2]
 
     npix = hdu.data.shape[0]
     center_slice = segm_obj.data[int(npix / 2) - 2:int(npix / 2) + 2,
                                  int(npix / 2) - 2:int(npix / 2) + 2]
 
-    center_source_id = seg_props['id'][seg_props['id'] ==
-                                       center_slice[0, 0]][0]
-    segmap = segm_obj.data == center_source_id
+    segmap = segm_obj.data
+    central_index = seg_props['id'] == center_slice[0, 0]
 
-    source_morph = statmorph.source_morphology(hdu.data, segmap, gain=gain)
-    return source_morph[0]
+    source_morph = statmorph.source_morphology(hdu.data, segmap, weightmap=errmap)
+    try:
+        return np.array(source_morph)[central_index][0]
+    except IndexError:
+        return None
 
 
 def save_morph_params(in_image, source_morph, fig_name, **kwargs):

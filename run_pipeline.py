@@ -26,7 +26,9 @@ morph_params = {
     'SERSIC_N': 'sersic_n',
     'M': 'multimode',
     'D': 'deviation',
-    'I': 'intensity'
+    'I': 'intensity',
+    'FLAG': 'flag',
+    'FLAG_SERSIC': "flag_sersic"
 }
 image_loc = '/home/rss230/AGN-Obscuration/outputs/BH+Nenkova/*/*/WFC3_F160W/0/'
 image_files = glob.glob(image_loc + '*.image.fits')
@@ -50,7 +52,7 @@ for image in image_files:
 
         seg, kernel, errmap = am.detect_sources(
             image_mock,
-            ext_name=ext_name)  # Run source detection with photutils
+            ext_name=ext_name, filt_wheel=filt_wheel)  # Run source detection with photutils
 
         if DEBLEND:
             seg = am.deblend_sources(
@@ -61,7 +63,7 @@ for image in image_files:
             props_ext_name = 'SEGMAP_PROPS'
 
         source_morph = am.source_morphology(
-            image_mock, seg, filt_wheel, ext_name=ext_name,
+            image_mock, seg, errmap=errmap, ext_name=ext_name,
             props_ext_name=props_ext_name
         )  # Calculate morphological parameters using statmorph
 
