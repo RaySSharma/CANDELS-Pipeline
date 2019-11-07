@@ -19,5 +19,5 @@ for i, image in enumerate(image_files):
         header = f['MockImage'].header
         try:
             fits.writeto(output_filename, data, header)
-        except OSError:
+        except IOError:
             fits.update(output_filename, data, header)
