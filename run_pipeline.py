@@ -30,10 +30,11 @@ morph_params = {
     'FLAG': 'flag',
     'FLAG_SERSIC': "flag_sersic"
 }
-image_loc = '/home/rss230/AGN-Obscuration/outputs/BH+Nenkova/*/*/WFC3_F160W/0/'
+image_loc = '/scratch/rss230/AGN-Obscuration/outputs/*/*/WFC3_F160W/0/'
 image_files = glob.glob(image_loc + '*.image.fits')
 
-for image in image_files:
+for i, image in enumerate(image_files):
+    print('Image Number:', i, '/', len(image_files), flush=True)
     print('Image:', image, flush=True)
     for lim in detection_limits:
         image_mock = image[:-5] + '.SB' + str(lim) + '.fits'
