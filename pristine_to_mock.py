@@ -41,7 +41,7 @@ def output_pristine_fits_image(image_file, out_file, filt_wheel):
 
     outfo.append(image_hdu)
     outfo.writeto(out_file, overwrite=True)
-
+    fo.close()
     return
 
 
@@ -84,6 +84,7 @@ def convolve_with_fwhm(in_image, filt_wheel):
 
     in_fo.append(hdu_out)
     in_fo.flush()
+    in_fo.close()
 
     return
 
@@ -115,6 +116,7 @@ def add_simple_noise(in_image, sb_maglim, ext_name, alg='Snyder2019'):
 
     in_fo.append(hdu_out)
     in_fo.flush()
+    in_fo.close()
 
     return
 

@@ -2,7 +2,7 @@ import astropy.io.fits as fits
 import glob
 import os
 
-BH_model = 'Nenkova'
+BH_model = 'Hopkins'
 SB_limit = '25'
 
 image_loc = '/home/rss230/AGN-Obscuration/outputs/BH+' + BH_model + '/*/*/WFC3_F160W/*/'
@@ -17,7 +17,5 @@ for i, image in enumerate(image_files):
         print('Output image:', output_filename)
         data = f['MockImage'].data
         header = f['MockImage'].header
-        try:
-            fits.writeto(output_filename, data, header)
-        except IOError:
-            fits.update(output_filename, data, header)
+        f_out = fits.PrimaryHDU(data=data, header=header)
+        f_out.writeto(output_filename, overwrite=True)

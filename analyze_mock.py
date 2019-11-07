@@ -47,6 +47,7 @@ def detect_sources(in_image, ext_name, filt_wheel, **kwargs):
         fo.append(thdu)
 
         fo.flush()
+        fo.close()
         return None, None, None
 
     # Error image can be computed with photutils plus a GAIN keyword -- ratio of flux units to counts
@@ -72,6 +73,7 @@ def detect_sources(in_image, ext_name, filt_wheel, **kwargs):
     fo.append(thdu)
 
     fo.flush()
+    fo.close()
     return segmap_obj, kernel, errmap
 
 
@@ -93,6 +95,7 @@ def deblend_sources(in_image, segm_obj, kernel, errmap, ext_name):
         fo.append(thdu)
 
         fo.flush()
+        fo.close()
         return None
 
     segm_obj = photutils.deblend_sources(hdu.data, segm_obj, npixels=10,
@@ -119,7 +122,7 @@ def deblend_sources(in_image, segm_obj, kernel, errmap, ext_name):
     fo.append(thdu)
 
     fo.flush()
-
+    fo.close()
     return segm_obj
 
 
@@ -141,6 +144,7 @@ def source_morphology(in_image, segm_obj, errmap, ext_name,
     central_index = seg_props['id'] == center_slice[0, 0]
 
     source_morph = statmorph.source_morphology(hdu.data, segmap, weightmap=errmap)
+    fo.close()
     try:
         return np.array(source_morph)[central_index][0]
     except IndexError:
@@ -158,8 +162,10 @@ def save_morph_params(in_image, source_morph, fig_name, **kwargs):
                 nhdu.header[key] = source_morph[value]
         fo.append(nhdu)
         fo.flush()
+        fo.close()
         fig = make_figure(source_morph)
         fig.savefig(fig_name, dpi=150)
     else:
         fo.append(nhdu)
         fo.flush()
+        fo.close()
