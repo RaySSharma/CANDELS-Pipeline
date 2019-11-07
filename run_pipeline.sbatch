@@ -5,6 +5,7 @@
 #SBATCH -t 05:00:00
 #SBATCH -p main
 #SBATCH -J powderday
+#SBATCH --requeue
 
 # Run command
 python --version
