@@ -6,7 +6,7 @@ import astropy.io.fits as fits
 
 SB_LIMIT = '25'
 BH_MODEL = 'Nenkova'
-OVERWRITE = True
+OVERWRITE_IMAGES = True
 
 IMAGE_LOC = '/scratch/rss230/AGN-Obscuration/outputs/*/*/WFC3_F160W/0/'
 IMAGE_FILES = glob.glob(IMAGE_LOC + '*.image.SB' + SB_LIMIT + '.fits')
@@ -33,7 +33,7 @@ def save_hdu(hdu, filename):
     while True:
         filename = filename[:-7] + '.' + str(count) + '.fits'
         try:
-            hdu.writeto(filename, overwrite=OVERWRITE)
+            hdu.writeto(filename, overwrite=OVERWRITE_IMAGES)
             break
         except OSError:
             count += 1
@@ -109,5 +109,5 @@ if not os.path.isfile(DATA_OUTPUT):
 else:
     df1 = pd.read_hdf(DATA_OUTPUT, key='data')
 
-df = pd.concat([df1, df2])
+df = pd.concat([df1, df2], sort=True)
 df.to_hdf(DATA_OUTPUT, key='data')
