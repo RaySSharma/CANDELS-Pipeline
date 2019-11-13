@@ -101,17 +101,18 @@ for i, image in enumerate(IMAGE_FILES):
         f_out = fits.PrimaryHDU(data=data, header=header)
         save_hdu(f_out, output_filename)  # Save HDU
 
-columns = [
-    'halo_num', 'timestep', 'redshift', 'filter', 'SB', 'BH_model', 'Lbol',
-    'Lbol_obsc'
-] + list(MORPH_PARAMS.keys())
-packaged_data = np.array(packaged_data)
-df2 = pd.DataFrame(packaged_data, columns=columns)
+if not MOCK:
+    columns = [
+        'halo_num', 'timestep', 'redshift', 'filter', 'SB', 'BH_model', 'Lbol',
+        'Lbol_obsc'
+    ] + list(MORPH_PARAMS.keys())
+    packaged_data = np.array(packaged_data)
+    df2 = pd.DataFrame(packaged_data, columns=columns)
 
-if not os.path.isfile(DATA_OUTPUT):
-    df1 = pd.DataFrame()
-else:
-    df1 = pd.read_hdf(DATA_OUTPUT, key='data')
+    if not os.path.isfile(DATA_OUTPUT):
+        df1 = pd.DataFrame()
+    else:
+        df1 = pd.read_hdf(DATA_OUTPUT, key='data')
 
-df = pd.concat([df1, df2], sort=True)
-df.to_hdf(DATA_OUTPUT, key='data')
+    df = pd.concat([df1, df2], sort=True)
+    df.to_hdf(DATA_OUTPUT, key='data')
