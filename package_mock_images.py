@@ -7,6 +7,7 @@ import astropy.io.fits as fits
 SB_LIMIT = '25'
 BH_MODEL = 'Nenkova'
 OVERWRITE_IMAGES = True
+MOCK = True
 
 IMAGE_LOC = '/scratch/rss230/AGN-Obscuration/outputs/*/*/WFC3_F160W/0/'
 IMAGE_FILES = glob.glob(IMAGE_LOC + '*.image.SB' + SB_LIMIT + '.fits')
@@ -84,18 +85,21 @@ for i, image in enumerate(IMAGE_FILES):
     with fits.open(image) as f:
         output_filename = IMAGE_OUTPUT_DIR + os.path.basename(
             image)[:-5] + '.0.fits'
-        data = f['MockImage'].data
-        header = f['MockImage'].header
-        redshift = header['REDSHIFT']
-        morphology = f['SOURCE_MORPH'].header
+        if MOCK:
+            data = f['MockImage'].data
+            header = f['MockImage'].header
+            morphology = f['SOURCE_MORPH'].header
+            redshift = header['REDSHIFT']
+            packaged_data.append(
+                gather_data(image, morphology,
+                            redshift))  # Gather morphological + halo + BH data
+        else:
+            data = f['SimulatedImage'].data
+            header = f['SimulatedImage'].header
+            redshift = header['REDSHIFT']
 
         f_out = fits.PrimaryHDU(data=data, header=header)
-
-        save_hdu(f_out, output_filename)  # Save mock HDU
-
-        packaged_data.append(
-            gather_data(image, morphology,
-                        redshift))  # Gather morphological + halo + BH data
+        save_hdu(f_out, output_filename)  # Save HDU
 
 columns = [
     'halo_num', 'timestep', 'redshift', 'filter', 'SB', 'BH_model', 'Lbol',
