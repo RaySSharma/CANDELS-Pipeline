@@ -6,7 +6,7 @@ import astropy.io.fits as fits
 
 SB_LIMIT = '25'
 BH_MODEL = 'Nenkova'
-OVERWRITE_IMAGES = True
+OVERWRITE_IMAGES = False
 MOCK = True
 
 IMAGE_LOC = '/scratch/rss230/AGN-Obscuration/outputs/*/*/WFC3_F160W/0/'
@@ -101,7 +101,7 @@ for i, image in enumerate(IMAGE_FILES):
         f_out = fits.PrimaryHDU(data=data, header=header)
         save_hdu(f_out, output_filename)  # Save HDU
 
-if not MOCK:
+if MOCK:
     columns = [
         'halo_num', 'timestep', 'redshift', 'filter', 'SB', 'BH_model', 'Lbol',
         'Lbol_obsc'
