@@ -30,7 +30,7 @@ morph_params = {
     'FLAG': 'flag',
     'FLAG_SERSIC': "flag_sersic"
 }
-image_loc = '/scratch/rss230/AGN-Obscuration/outputs/*/*/WFC3_F160W/0/'
+image_loc = '/scratch/rss230/AGN-Obscuration/outputs/*/*/WFC3_F160W/[3-5]/'
 image_files = glob.glob(image_loc + '*.image.fits')
 
 for i, image in enumerate(image_files):
