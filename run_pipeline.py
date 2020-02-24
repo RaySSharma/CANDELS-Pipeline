@@ -9,9 +9,9 @@ DEBLEND = True
 
 # {filter: central wavelength [micron], instrument resolution [arcsec], gain}
 filt_wheel = {
-    'ACS_F814W': [0.8353, 0.05, 1.55],
-    'WFC3_F160W': [1.5369, 0.13, 2.4],
-    'ACS_F606W': [0.5907, 0.05, 1.55]
+    'ACS_F814W': [0.8353, 0.124, 1.55],
+    'WFC3_F160W': [1.5369, 0.145, 2.4],
+    'ACS_F606W': [0.5907, 0.124, 1.55]
 }
 # mag/arcsec^2
 detection_limits = [25, 27]
