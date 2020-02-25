@@ -3,12 +3,13 @@ import os
 import numpy as np
 import pandas as pd
 import astropy.io.fits as fits
-
+from re import findall
 """Package images for sharing and output a data file of BH, halo, and morphological parameters.
 """
 
 SB_LIMIT = '25'
 OVERWRITE_IMAGES = True
+PACKAGE_MOCK_IMAGES = True
 OUTPUT_PARAMETERS = True
 NUM_RUNS = 1
 BH_MODEL = 'Hopkins'
@@ -33,14 +34,7 @@ TOTAL_MISSING_BH_SED = 0
 
 
 def save_hdu(hdu, filename):
-    count = 0
-    while True:
-        filename = filename[:-7] + '.' + str(count) + '.fits'
-        try:
-            hdu.writeto(filename, overwrite=OVERWRITE_IMAGES)
-            break
-        except OSError:
-            count += 1
+    hdu.writeto(filename, overwrite=OVERWRITE_IMAGES)
     print('Output image:', filename)
 
 
@@ -81,13 +75,14 @@ def gather_halo_properties(halo_num, timestep):
         M200 {str} -- Halo mass
         Mgas {str} -- Total gas mass
     """
-        info_file = SIMULATION_DIR + halo_num + "/info_" + timestep + ".txt"
-        with open(info_file) as f:
-            lines = f.readlines()
-            Mstar = findall("[0-9].[0-9]*e\+[0-9]*", lines[14])[0]
-            M200 = findall("[0-9].[0-9]*e\+[0-9]*", test[8])[0]
-            Mgas = findall("[0-9].[0-9]*e\+[0-9]*", test[15])[0]
-        return Mstar, M200, Mgas
+    info_file = SIMULATION_DIR + halo_num + "/info_" + timestep + ".txt"
+    with open(info_file) as f:
+        lines = f.readlines()
+        Mstar = findall("[0-9].[0-9]*e\+[0-9]*", lines[14])[0]
+        M200 = findall("[0-9].[0-9]*e\+[0-9]*", lines[8])[0]
+        Mgas = findall("[0-9].[0-9]*e\+[0-9]*", lines[15])[0]
+    return Mstar, M200, Mgas
+
 
 def gather_sim_properties(im):
     """Gather simulation properties obtainable from image filename
@@ -126,8 +121,10 @@ def gather_data(im, morph, z):
     halo_num, timestep, filter_name, SB = gather_sim_properties(im)
     morph_params = gather_morph_params(morph)
     Mstar, M200, Mgas = gather_halo_properties(halo_num, timestep)
-    image_data = np.hstack(
-        [halo_num, timestep, z, filter_name, SB, BH_MODEL, lum, Mstar, M200, Mgas, morph_params])
+    image_data = [
+        halo_num, timestep, z, filter_name, SB, BH_MODEL, lum, Mstar, M200,
+        Mgas, morph_params
+    ]
     return image_data
 
 
@@ -151,39 +148,27 @@ for i, image in enumerate(image_files):
         image_number = str(int(image.split('/')[-2]) - 3)
         packaged_filename = PACKAGED_IMAGE_OUTPUT_DIR + os.path.basename(
             image)[:-5] + '.' + image_number + '.fits'
-        filename = image.split('/')[-1][:-4] + image_number + '.fits'
 
-        if OUTPUT_PARAMETERS:
+        if PACKAGE_MOCK_IMAGES:
             data = f['MockImage'].data
             header = f['MockImage'].header
             morphology = f['SOURCE_MORPH'].header
             redshift = header['REDSHIFT']
-            gathered_data = gather_data(
-                    image, morphology, redshift,
-                    filename)
+            gathered_data = gather_data(image, morphology, redshift)
 
+            header['MSTAR'] = (float(gathered_data[7]), 'Msol')
             packaged_data.append(gathered_data)
         else:
             data = f['SimulatedImage'].data
             header = f['SimulatedImage'].header
-            redshift = header['REDSHIFT']
 
         f_out = fits.PrimaryHDU(data=data, header=header)
         save_hdu(f_out, packaged_filename)
 
-
-if OUTPUT_PARAMETERS:
+if OUTPUT_PARAMETERS and PACKAGE_MOCK_IMAGES:
     columns = [
-        'halo_num',
-        'timestep',
-        'redshift',
-        'filter',
-        'SB',
-        'bh_model',
-        'Lbol',
-        'Mstar',
-        'M200',
-        'Mgas'
+        'halo_num', 'timestep', 'redshift', 'filter', 'SB', 'bh_model', 'Lbol',
+        'Mstar', 'M200', 'Mgas'
     ] + list(MORPH_PARAMS.keys())
     packaged_data = np.array(packaged_data)
     df2 = pd.DataFrame(packaged_data, columns=columns)
