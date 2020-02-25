@@ -4,15 +4,18 @@ import numpy as np
 import pandas as pd
 import astropy.io.fits as fits
 
-SB_LIMIT = '25'
-BH_MODEL = 'Nenkova'
-OVERWRITE_IMAGES = False
-MOCK = True
+"""Package images for sharing and output a data file of BH, halo, and morphological parameters.
+"""
 
-IMAGE_LOC = '/scratch/rss230/AGN-Obscuration/outputs/*/*/WFC3_F160W/0/'
-IMAGE_FILES = glob.glob(IMAGE_LOC + '*.image.SB' + SB_LIMIT + '.fits')
-IMAGE_OUTPUT_DIR = '/scratch/rss230/Kocevski_images/'
-DATA_OUTPUT = '/home/rss230/AGN-Obscuration/outputs/data_SB' + SB_LIMIT + '.h5'
+SB_LIMIT = '25'
+OVERWRITE_IMAGES = True
+OUTPUT_PARAMETERS = True
+NUM_RUNS = 1
+BH_MODEL = 'Hopkins'
+SIMULATION_DIR = '/projects/somerville/GADGET-3/Fiducial_Models/Fiducial_withAGN/'
+IMAGE_INPUT_DIR = '/scratch/rss230/AGN-Obscuration/outputs/*/*/WFC3_F160W/[3-5]/'
+PACKAGED_IMAGE_OUTPUT_DIR = '/scratch/rss230/Kocevski_images/'
+PARAMETER_OUTPUT_FILE = '/home/rss230/AGN-Obscuration/outputs/data_SB' + SB_LIMIT + '.h5'
 MORPH_PARAMS = {
     'GINI': 'gini',
     'M20': 'm20',
@@ -26,7 +29,7 @@ MORPH_PARAMS = {
     'FLAG': 'flag',
     'FLAG_SERSIC': 'flag_sersic'
 }
-MISSING_BH_SED = 0
+TOTAL_MISSING_BH_SED = 0
 
 
 def save_hdu(hdu, filename):
@@ -41,30 +44,90 @@ def save_hdu(hdu, filename):
     print('Output image:', filename)
 
 
-def gather_data(im, morph, z):
-    global MISSING_BH_SED
+def gather_bh_lum(im):
+    """Gather BH properties from Powderday bh_sed.npz file
+    
+    Arguments:
+        im {str} -- Image filename 
+    
+    Returns:
+        luminosity [float] -- Total BH luminosity
+    """
+    global TOTAL_MISSING_BH_SED
+
     try:
         with np.load(os.path.dirname(im) + '/bh_sed.npz') as bh_sed:
             lum = bh_sed['luminosity'].sum()
-            fnu = bh_sed['fnu']
-            nu = bh_sed['nu']
-            lum_obsc = -np.sum(np.trapz(fnu / nu, nu, axis=1))
+            #fnu = bh_sed['fnu']
+            #nu = bh_sed['nu']
+            #lum_obsc = -np.sum(np.trapz(fnu / nu, nu, axis=1))
     except FileNotFoundError:
         print('No bh_sed.npz found.')
-        MISSING_BH_SED += 1
+        TOTAL_MISSING_BH_SED += 1
         lum = np.nan
-        lum_obsc = np.nan
+        #lum_obsc = np.nan
+    return lum
 
+
+def gather_halo_properties(halo_num, timestep):
+    """Gather halo properties from simulation info file
+    
+    Arguments:
+        halo_num {str} -- Halo number
+        timestep {str} -- Simulation snapshot
+    
+    Returns:
+        Mstar {str} -- Stellar mass
+        M200 {str} -- Halo mass
+        Mgas {str} -- Total gas mass
+    """
+        info_file = SIMULATION_DIR + halo_num + "/info_" + timestep + ".txt"
+        with open(info_file) as f:
+            lines = f.readlines()
+            Mstar = findall("[0-9].[0-9]*e\+[0-9]*", lines[14])[0]
+            M200 = findall("[0-9].[0-9]*e\+[0-9]*", test[8])[0]
+            Mgas = findall("[0-9].[0-9]*e\+[0-9]*", test[15])[0]
+        return Mstar, M200, Mgas
+
+def gather_sim_properties(im):
+    """Gather simulation properties obtainable from image filename
+    
+    Arguments:
+        im {str} -- Image filename
+    
+    Returns:
+        halo_num {str} -- Halo number
+        timestep {str} -- Simulation snapshot
+        filter_name {str} -- Filter used for imaging
+        SB {str} -- Surface brightness in mag arcsec^-2
+    """
     halo_properties = im.split('/')[-1].split('.')
     halo_num = halo_properties[0]
     timestep = halo_properties[1]
     filter_name = halo_properties[2]
     SB = halo_properties[4]
+
+    return halo_num, timestep, filter_name, SB
+
+
+def gather_data(im, morph, z):
+    """Gather up data for exporting
+    
+    Arguments:
+        im {str} -- Image filename
+        morph {object} -- Source morphology object
+        z {float} -- Redshift
+        bh_model {str} -- Black hole model type
+    
+    Returns:
+        np.array -- Data to export
+    """
+    lum = gather_bh_lum(im)
+    halo_num, timestep, filter_name, SB = gather_sim_properties(im)
     morph_params = gather_morph_params(morph)
-    image_data = np.hstack([
-        halo_num, timestep, z, filter_name, SB, BH_MODEL, lum, lum_obsc,
-        morph_params
-    ])
+    Mstar, M200, Mgas = gather_halo_properties(halo_num, timestep)
+    image_data = np.hstack(
+        [halo_num, timestep, z, filter_name, SB, BH_MODEL, lum, Mstar, M200, Mgas, morph_params])
     return image_data
 
 
@@ -78,41 +141,57 @@ def gather_morph_params(morph):
     return params
 
 
+image_files = glob.glob(IMAGE_INPUT_DIR + '*.image.SB' + SB_LIMIT + '.fits')
+
 packaged_data = []
-for i, image in enumerate(IMAGE_FILES):
+for i, image in enumerate(image_files):
     print('Image:', image)
-    print('Image number:', i, '/', len(IMAGE_FILES))
+    print('Image number:', i, '/', len(image_files))
     with fits.open(image) as f:
-        output_filename = IMAGE_OUTPUT_DIR + os.path.basename(
-            image)[:-5] + '.0.fits'
-        if MOCK:
+        image_number = str(int(image.split('/')[-2]) - 3)
+        packaged_filename = PACKAGED_IMAGE_OUTPUT_DIR + os.path.basename(
+            image)[:-5] + '.' + image_number + '.fits'
+        filename = image.split('/')[-1][:-4] + image_number + '.fits'
+
+        if OUTPUT_PARAMETERS:
             data = f['MockImage'].data
             header = f['MockImage'].header
             morphology = f['SOURCE_MORPH'].header
             redshift = header['REDSHIFT']
-            packaged_data.append(
-                gather_data(image, morphology,
-                            redshift))  # Gather morphological + halo + BH data
+            gathered_data = gather_data(
+                    image, morphology, redshift,
+                    filename)
+
+            packaged_data.append(gathered_data)
         else:
             data = f['SimulatedImage'].data
             header = f['SimulatedImage'].header
             redshift = header['REDSHIFT']
 
         f_out = fits.PrimaryHDU(data=data, header=header)
-        save_hdu(f_out, output_filename)  # Save HDU
+        save_hdu(f_out, packaged_filename)
 
-if MOCK:
+
+if OUTPUT_PARAMETERS:
     columns = [
-        'halo_num', 'timestep', 'redshift', 'filter', 'SB', 'BH_model', 'Lbol',
-        'Lbol_obsc'
+        'halo_num',
+        'timestep',
+        'redshift',
+        'filter',
+        'SB',
+        'bh_model',
+        'Lbol',
+        'Mstar',
+        'M200',
+        'Mgas'
     ] + list(MORPH_PARAMS.keys())
     packaged_data = np.array(packaged_data)
     df2 = pd.DataFrame(packaged_data, columns=columns)
 
-    if not os.path.isfile(DATA_OUTPUT):
-        df1 = pd.DataFrame()
+    if os.path.isfile(PARAMETER_OUTPUT_FILE):
+        df1 = pd.read_hdf(PARAMETER_OUTPUT_FILE, key='data')
     else:
-        df1 = pd.read_hdf(DATA_OUTPUT, key='data')
+        df1 = pd.DataFrame()
 
     df = pd.concat([df1, df2], sort=True)
-    df.to_hdf(DATA_OUTPUT, key='data')
+    df.to_hdf(PARAMETER_OUTPUT_FILE, key='data')
