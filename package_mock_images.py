@@ -78,9 +78,13 @@ def gather_halo_properties(halo_num, timestep):
     info_file = SIMULATION_DIR + halo_num + "/info_" + timestep + ".txt"
     with open(info_file) as f:
         lines = f.readlines()
-        Mstar = findall("[0-9].[0-9]*e\+[0-9]*", lines[14])[0]
-        M200 = findall("[0-9].[0-9]*e\+[0-9]*", lines[8])[0]
-        Mgas = findall("[0-9].[0-9]*e\+[0-9]*", lines[15])[0]
+        try:
+            Mstar = findall("[0-9].[0-9]*e\+[0-9]*", lines[14])[0]
+            M200 = findall("[0-9].[0-9]*e\+[0-9]*", lines[8])[0]
+            Mgas = findall("[0-9].[0-9]*e\+[0-9]*", lines[15])[0]
+        except IndexError:
+            Mstar, M200, Mgas = '0', '0', '0'
+
     return Mstar, M200, Mgas
 
 
@@ -123,7 +127,7 @@ def gather_data(im, morph, z):
     Mstar, M200, Mgas = gather_halo_properties(halo_num, timestep)
     image_data = [
         halo_num, timestep, z, filter_name, SB, BH_MODEL, lum, Mstar, M200,
-        Mgas, morph_params
+        Mgas, *morph_params
     ]
     return image_data
 
