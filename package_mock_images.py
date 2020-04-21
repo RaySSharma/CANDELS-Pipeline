@@ -16,7 +16,7 @@ BH_MODEL = 'Hopkins'
 SIMULATION_DIR = '/projects/somerville/GADGET-3/Fiducial_Models/Fiducial_withAGN/'
 IMAGE_INPUT_DIR = '/scratch/rss230/AGN-Obscuration/outputs/*/*/WFC3_F160W/[3-5]/'
 PACKAGED_IMAGE_OUTPUT_DIR = '/scratch/rss230/Kocevski_images/'
-PARAMETER_OUTPUT_FILE = '/home/rss230/AGN-Obscuration/outputs/data_SB' + SB_LIMIT + '.h5'
+PARAMETER_OUTPUT_FILE = '/scratch/rss230/AGN-Obscuration/outputs/data_SB' + SB_LIMIT + '.h5'
 MORPH_PARAMS = {
     'GINI': 'gini',
     'M20': 'm20',

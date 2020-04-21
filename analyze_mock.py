@@ -31,7 +31,7 @@ def detect_sources(in_image, ext_name, filt_wheel, **kwargs):
     kernel = Gaussian2DKernel(sigma, x_size=nsize, y_size=nsize)
 
     bkg_estimator = photutils.MedianBackground()
-    bkg = photutils.Background2D(hdu.data, (50, 50),
+    bkg = photutils.Background2D(hdu.data, (512, 512),
                                  bkg_estimator=bkg_estimator)
     thresh = bkg.background + (5. * bkg.background_rms)
     segmap_obj = photutils.detect_sources(hdu.data, thresh, npixels=10,
@@ -155,6 +155,7 @@ def save_morph_params(in_image, source_morph, fig_name, **kwargs):
     fo = fits.open(in_image, 'append')
     nhdu = fits.ImageHDU()
     nhdu.header['EXTNAME'] = 'SOURCE_MORPH'
+    nhdu.data = source_morph._segmap_gini.astype(int)
 
     if source_morph is not None:
         if kwargs is not None:
