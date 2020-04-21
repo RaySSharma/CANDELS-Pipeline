@@ -155,9 +155,9 @@ def save_morph_params(in_image, source_morph, fig_name, **kwargs):
     fo = fits.open(in_image, 'append')
     nhdu = fits.ImageHDU()
     nhdu.header['EXTNAME'] = 'SOURCE_MORPH'
-    nhdu.data = source_morph._segmap_gini.astype(int)
 
     if source_morph is not None:
+        nhdu.data = source_morph._segmap_gini.astype(int)
         if kwargs is not None:
             for key, value in kwargs.items():
                 nhdu.header[key] = source_morph[value]
