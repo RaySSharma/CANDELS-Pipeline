@@ -8,6 +8,7 @@ import numpy as np
 import photutils
 from photutils.utils import calc_total_error
 from astropy.stats import gaussian_fwhm_to_sigma
+from astropy.stats import sigma_clipped_stats
 from astropy.convolution import Gaussian2DKernel
 import statmorph
 from statmorph.utils.image_diagnostics import make_figure
@@ -143,7 +144,9 @@ def source_morphology(in_image, segm_obj, errmap, ext_name,
     segmap = segm_obj.data
     central_index = seg_props['id'] == center_slice[0, 0]
 
-    source_morph = statmorph.source_morphology(hdu.data, segmap, weightmap=errmap)
+    mean, median, std = sigma_clipped_stats(hdu.data, sigma=5.0)
+    data = hdu.data - median
+    source_morph = statmorph.source_morphology(data, segmap, weightmap=errmap)
     fo.close()
     try:
         return np.array(source_morph)[central_index][0]
