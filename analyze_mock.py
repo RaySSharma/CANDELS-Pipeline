@@ -49,7 +49,7 @@ def detect_sources(in_image, ext_name, filt_wheel, **kwargs):
 
         fo.flush()
         fo.close()
-        return None, None, None
+        return None, None, None, None
 
     # Error image can be computed with photutils plus a GAIN keyword -- ratio of flux units to counts
     gain = filt_wheel[hdu.header['FILTER']][2]
