@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
+import numpy as np
 import pristine_to_mock as ptm
 import analyze_mock as am
 import glob
 import matplotlib
 matplotlib.use('Agg')
+from mpi4py import MPI
 
 DEBLEND = True
+IMAGE_LOC = '/scratch/rss230/AGN-Obscuration/outputs/*/*/WFC3_F160W/[3-5]/'
+
 
 # {filter: central wavelength [micron], instrument resolution [arcsec], gain}
 filt_wheel = {
@@ -30,11 +34,27 @@ morph_params = {
     'FLAG': 'flag',
     'FLAG_SERSIC': "flag_sersic"
 }
-image_loc = '/scratch/rss230/AGN-Obscuration/outputs/*/*/WFC3_F160W/[3-5]/'
-image_files = glob.glob(image_loc + '*.image.fits')
 
-for i, image in enumerate(image_files):
-    print('Image Number:', i, '/', len(image_files), flush=True)
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+size = comm.Get_size()
+
+if rank == 0:
+    image_files = glob.glob(IMAGE_LOC + '*.image.fits')
+    num_images = len(image_files)
+    images_per_proc = int(np.ceil(num_images / size))
+    data = []
+    for i in range(size):
+        try:
+            data.append(image_files[i*images_per_proc:(i+1)*images_per_proc])
+        except IndexError:
+            pass
+else:
+    data = None
+
+data = comm.scatter(data, root=0)
+
+for i, image in enumerate(data):
     print('Image:', image, flush=True)
     for lim in detection_limits:
         image_mock = image[:-5] + '.SB' + str(lim) + '.fits'
