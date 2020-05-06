@@ -55,13 +55,13 @@ else:
 data = comm.scatter(data, root=0)
 
 for i, image in enumerate(data):
-    print(i, '/', len(data), 'Image:', image, flush=True)
+    print('[PROC '+str(rank)+']:', i, '/', len(data), 'Image:', image, flush=True)
     for lim in detection_limits:
         image_mock = image[:-5] + '.SB' + str(lim) + '.fits'
         fig_name = image[:-5] + '.SB' + str(lim) + '.png'
         ext_name = 'MockImage'
 
-        print('Output Image:', image_mock, flush=True)
+        print('[PROC '+str(rank)+']:', 'Output Image:', image_mock, flush=True)
 
         ptm.output_pristine_fits_image(
             image, image_mock, filt_wheel)  # Setup image for mock creation
