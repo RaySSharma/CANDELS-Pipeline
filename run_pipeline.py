@@ -61,8 +61,7 @@ for i, image in enumerate(data):
         fig_name = image[:-5] + '.SB' + str(lim) + '.png'
         ext_name = 'MockImage'
 
-        print('SB:', lim, 'mag arcsec^-2', flush=True)
-        print('Mock Image:', image_mock, flush=True)
+        print('Output Image:', image_mock, flush=True)
 
         ptm.output_pristine_fits_image(
             image, image_mock, filt_wheel)  # Setup image for mock creation

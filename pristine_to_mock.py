@@ -161,7 +161,6 @@ def make_galaxies_astropy(image_file, flux, galsize, xi, yi, ar, pa, n=4):
 
     xi, yi = int(xi), int(yi)
     # COLUMNS FIRST -- because FITS are silly
-    print(image.shape)
     image[yi - img.shape[1] // 2:yi + img.shape[1] // 2, xi -
           img.shape[0] // 2:xi + img.shape[0] // 2] += img
 
