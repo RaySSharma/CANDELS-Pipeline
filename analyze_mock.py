@@ -75,7 +75,7 @@ def detect_sources(in_image, ext_name, filt_wheel, **kwargs):
 
     fo.flush()
     fo.close()
-    return segmap_obj, kernel, errmap
+    return segmap_obj, kernel, errmap, bkg
 
 
 # Run PhotUtils Deblender
@@ -128,7 +128,7 @@ def deblend_sources(in_image, segm_obj, kernel, errmap, ext_name):
 
 
 # Run morphology code
-def source_morphology(in_image, segm_obj, errmap, ext_name,
+def source_morphology(in_image, segm_obj, errmap, bkg, ext_name,
                       props_ext_name):
     fo = fits.open(in_image, 'append')
     hdu = fo[ext_name]
@@ -144,8 +144,7 @@ def source_morphology(in_image, segm_obj, errmap, ext_name,
     segmap = segm_obj.data
     central_index = seg_props['id'] == center_slice[0, 0]
 
-    mean, median, std = sigma_clipped_stats(hdu.data, sigma=5.0)
-    data = hdu.data - median
+    data = hdu.data - bkg.background
     source_morph = statmorph.source_morphology(data, segmap, weightmap=errmap)
     fo.close()
     try:

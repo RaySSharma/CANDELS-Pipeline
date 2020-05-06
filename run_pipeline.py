@@ -51,7 +51,7 @@ for i, image in enumerate(image_files):
         ptm.add_simple_noise(image_mock, sb_maglim=lim, ext_name=ext_name,
                              alg='Snyder2019')  # Add noise model
 
-        seg, kernel, errmap = am.detect_sources(
+        seg, kernel, errmap, bkg = am.detect_sources(
             image_mock,
             ext_name=ext_name, filt_wheel=filt_wheel)  # Run source detection with photutils
 
@@ -64,7 +64,7 @@ for i, image in enumerate(image_files):
             props_ext_name = 'SEGMAP_PROPS'
 
         source_morph = am.source_morphology(
-            image_mock, seg, errmap=errmap, ext_name=ext_name,
+            image_mock, seg, errmap=errmap, bkg=bkg, ext_name=ext_name,
             props_ext_name=props_ext_name
         )  # Calculate morphological parameters using statmorph
 
