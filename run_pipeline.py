@@ -55,7 +55,7 @@ else:
 data = comm.scatter(data, root=0)
 
 for i, image in enumerate(data):
-    print('Image:', image, flush=True)
+    print(i, '/', len(data), 'Image:', image, flush=True)
     for lim in detection_limits:
         image_mock = image[:-5] + '.SB' + str(lim) + '.fits'
         fig_name = image[:-5] + '.SB' + str(lim) + '.png'
