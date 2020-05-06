@@ -18,7 +18,7 @@ filt_wheel = {
     'ACS_F606W': [0.5907, 0.124, 1.55]
 }
 # mag/arcsec^2
-detection_limits = [25, 27]
+detection_limits = [25]
 
 # List of morphological parameters to calculate in statmorph
 morph_params = {
