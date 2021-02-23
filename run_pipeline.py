@@ -30,7 +30,7 @@ field_info = {
         "hlsp_candels_hst_wfc3_gs-tot_f160w_v1.0_drz.fits",
     ],
     "GN": [
-        "hlsp_candels_hst_wfc3_goodsn-barro19_multi_v1-1_photometry-cat.fits",
+        "hlsp_candels_hst_wfc3_goodsn-barro19_multi_v1-3_photometry-cat.fits",
         "hlsp_candels_hst_wfc3_gn-tot-60mas_f160w_v1.0_drz.fits",
     ],
     "COS": [
