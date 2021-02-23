@@ -12,7 +12,7 @@ DEBLEND = True
 # {filter: central wavelength [micron], instrument resolution [arcsec], gain}
 filt_wheel = {
     "ACS_F814W": [0.8353, 0.124, 1.55],
-    "WFC3_F160W": [1.5369, 0.145, 2.4],
+    "WFC3_F160W": [1.5369, 0.18, 2.4],
     "ACS_F606W": [0.5907, 0.124, 1.55],
 }
 # CANDELS RealSim catalog/field parameters
@@ -39,9 +39,10 @@ field_info = {
     ],
 }
 realsim_input_dir = "/scratch/rss230/CANDELS-Pipeline/RealSim/Inputs/"
+#realsim_input_dir = "/home/ray/Research/CANDELS-Pipeline/RealSim/Inputs/"
 
 # mag/arcsec^2
-detection_limits = [25, 27]
+detection_limits = [25]
 
 # List of morphological parameters to calculate in statmorph
 morph_params = {
@@ -57,7 +58,7 @@ morph_params = {
     "FLAG": "flag",
     "FLAG_SERSIC": "flag_sersic",
 }
-image_loc = "/scratch/rss230/AGN-Mergers/outputs/*/*/WFC3_F160W/[0-2]/"
+image_loc = "/scratch/rss230/AGN-Obscuration/outputs/*/*/WFC3_F160W/[3-5]/"
 image_files = glob.glob(image_loc + "*.image.fits")
 
 for i, image in enumerate(image_files):
