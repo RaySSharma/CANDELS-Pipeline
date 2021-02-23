@@ -29,10 +29,6 @@ field_info = {
         "hlsp_candels_hst_wfc3_goodss-tot-multiband_f160w_v1_cat.fits",
         "hlsp_candels_hst_wfc3_gs-tot_f160w_v1.0_drz.fits",
     ],
-    "GN": [
-        "hlsp_candels_hst_wfc3_goodsn-barro19_multi_v1-3_photometry-cat.fits",
-        "hlsp_candels_hst_wfc3_gn-tot-60mas_f160w_v1.0_drz.fits",
-    ],
     "COS": [
         "hlsp_candels_hst_wfc3_cos-tot-multiband_f160w_v1_cat.fits",
         "hlsp_candels_hst_wfc3_cos-tot_f160w_v1.0_drz.fits",
