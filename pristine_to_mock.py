@@ -90,7 +90,7 @@ def convolve_with_fwhm(in_image, filt_wheel):
 
 
 # accepts sb_maglim value which corresponds to magnitudes per square arcsecond
-def add_simple_noise(in_image, sb_maglim, ext_name, alg="Snyder2019"):
+def add_simple_noise(in_image, sb_maglim, ext_name="MockImage", alg="Snyder2019"):
 
     in_fo = fits.open(in_image, "append")
     image_in = in_fo["MockImage_Noiseless"].data

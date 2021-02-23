@@ -76,7 +76,7 @@ for i, image in enumerate(image_files):
         )  # Setup image for mock creation
         ptm.convolve_with_fwhm(image_mock, filt_wheel)  # Convolve mock image with PSF
         ptm.add_simple_noise(
-            image_mock, sb_maglim=lim, ext_name=ext_name, alg="Snyder2019"
+            image_mock, sb_maglim=lim, alg="Snyder2019"
         )  # Add noise model
 
         candels_args = obs.make_candels_args(field_info, realsim_input_dir)
@@ -85,12 +85,12 @@ for i, image in enumerate(image_files):
         )  # Apply RealSim CANDELS fields
 
         seg, kernel, errmap = am.detect_sources(
-            image_mock, ext_name=ext_name, filt_wheel=filt_wheel
+            image_mock, ext_name="RealSim", filt_wheel=filt_wheel
         )  # Run source detection with photutils
 
         if DEBLEND:
             seg = am.deblend_sources(
-                image_mock, seg, kernel, errmap, ext_name=ext_name
+                image_mock, seg, kernel, errmap, ext_name="RealSim"
             )  # Deblend detected sources
             props_ext_name = "DEBLEND_PROPS"
         else:
