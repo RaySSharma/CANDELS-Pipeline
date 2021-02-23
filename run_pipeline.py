@@ -38,7 +38,7 @@ field_info = {
         "hlsp_candels_hst_wfc3_cos-tot_f160w_v1.0_drz.fits",
     ],
 }
-realsim_input_dir = "/home/ray/Research/CANDELS-Pipeline/RealSim/Inputs/"
+realsim_input_dir = "/scratch/rss230/CANDELS-Pipeline/RealSim/Inputs/"
 
 # mag/arcsec^2
 detection_limits = [25, 27]
@@ -80,7 +80,7 @@ for i, image in enumerate(image_files):
         )  # Add noise model
 
         candels_args = obs.make_candels_args(field_info, realsim_input_dir)
-        new_im, real_im = obs.ObsRealism(
+        obs.ObsRealism(
             image_mock, candels_args
         )  # Apply RealSim CANDELS fields
 
