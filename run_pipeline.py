@@ -7,13 +7,9 @@ import matplotlib
 
 matplotlib.use("Agg")
 
-DEBLEND = True
-
 # {filter: central wavelength [micron], instrument resolution [arcsec], gain}
 filt_wheel = {
-    "ACS_F814W": [0.8353, 0.124, 1.55],
     "WFC3_F160W": [1.5369, 0.18, 2.4],
-    "ACS_F606W": [0.5907, 0.124, 1.55],
 }
 # CANDELS RealSim catalog/field parameters
 field_info = {
@@ -63,7 +59,6 @@ for i, image in enumerate(image_files):
     for lim in detection_limits:
         image_mock = image[:-5] + ".SB" + str(lim) + ".fits"
         fig_name = image[:-5] + ".SB" + str(lim) + ".png"
-        ext_name = "MockImage"
 
         print("SB:", lim, "mag arcsec^-2", flush=True)
         print("Mock Image:", image_mock, flush=True)
@@ -85,20 +80,16 @@ for i, image in enumerate(image_files):
             image_mock, ext_name="RealSim", filt_wheel=filt_wheel
         )  # Run source detection with photutils
 
-        if DEBLEND:
-            seg = am.deblend_sources(
-                image_mock, seg, kernel, errmap, ext_name="RealSim"
-            )  # Deblend detected sources
-            props_ext_name = "DEBLEND_PROPS"
-        else:
-            props_ext_name = "SEGMAP_PROPS"
+        seg = am.deblend_sources(
+            image_mock, seg, kernel, errmap, ext_name="RealSim"
+        )  # Deblend detected sources
 
         source_morph = am.source_morphology(
             image_mock,
             seg,
             errmap=errmap,
-            ext_name=ext_name,
-            props_ext_name=props_ext_name,
+            ext_name="RealSim",
+            props_ext_name="DEBLEND_PROPS",
         )  # Calculate morphological parameters using statmorph
 
         am.save_morph_params(

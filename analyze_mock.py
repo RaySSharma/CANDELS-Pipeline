@@ -34,7 +34,7 @@ def detect_sources(in_image, ext_name, filt_wheel, **kwargs):
     bkg = photutils.Background2D(hdu.data, (50, 50),
                                  bkg_estimator=bkg_estimator)
     thresh = bkg.background + (5. * bkg.background_rms)
-    segmap_obj = photutils.detect_sources(hdu.data, thresh, npixels=10,
+    segmap_obj = photutils.detect_sources(hdu.data, thresh, npixels=5,
                                           filter_kernel=kernel, **kwargs)
 
     if segmap_obj is None:
@@ -98,9 +98,8 @@ def deblend_sources(in_image, segm_obj, kernel, errmap, ext_name):
         fo.close()
         return None
 
-    segm_obj = photutils.deblend_sources(hdu.data, segm_obj, npixels=10,
-                                         filter_kernel=kernel, nlevels=32,
-                                         contrast=0.01)
+    segm_obj = photutils.deblend_sources(hdu.data, segm_obj, npixels=5,
+                                         filter_kernel=kernel)
     segmap = segm_obj.data
 
     props = photutils.source_properties(hdu.data, segmap, errmap)
@@ -132,18 +131,19 @@ def source_morphology(in_image, segm_obj, errmap, ext_name,
     fo = fits.open(in_image, 'append')
     hdu = fo[ext_name]
     seg_props = fo[props_ext_name].data
+    im = hdu.data
 
     if segm_obj is None:
         return None
 
-    npix = hdu.data.shape[0]
+    npix = im.shape[0]
     center_slice = segm_obj.data[int(npix / 2) - 2:int(npix / 2) + 2,
                                  int(npix / 2) - 2:int(npix / 2) + 2]
 
     segmap = segm_obj.data
     central_index = seg_props['id'] == center_slice[0, 0]
 
-    source_morph = statmorph.source_morphology(hdu.data, segmap, weightmap=errmap)
+    source_morph = statmorph.source_morphology(im, segmap, weightmap=errmap)
     fo.close()
     try:
         return np.array(source_morph)[central_index][0]
