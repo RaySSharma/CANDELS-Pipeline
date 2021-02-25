@@ -73,6 +73,14 @@ def detect_sources(in_image, ext_name, filt_wheel, **kwargs):
     fo.append(thdu)
 
     fo.flush()
+
+    nhdu = fits.ImageHDU(segmap)
+
+    # save errmap
+    nhdu.header['EXTNAME'] = 'WEIGHT_MAP'
+    fo.append(nhdu)
+
+    fo.flush()
     fo.close()
     return segmap_obj, kernel, errmap
 
@@ -126,11 +134,13 @@ def deblend_sources(in_image, segm_obj, kernel, errmap, ext_name):
 
 
 # Run morphology code
-def source_morphology(in_image, segm_obj, errmap, ext_name,
-                      props_ext_name):
+def source_morphology(in_image, ext_name):
     fo = fits.open(in_image, 'append')
     hdu = fo[ext_name]
-    seg_props = fo[props_ext_name].data
+
+    segm_obj = fo['DEBLEND']
+    errmap = fo['WEIGHT_MAP']
+    seg_props = fo['DEBLEND_PROPS'].data
     im = hdu.data
 
     if segm_obj is None:

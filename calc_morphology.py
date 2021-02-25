@@ -1,11 +1,6 @@
 #!/usr/bin/env python3
-import pristine_to_mock as ptm
 import analyze_mock as am
-import RealSim.ObsRealism as obs
 import glob
-import matplotlib
-
-matplotlib.use("Agg")
 
 # {filter: central wavelength [micron], instrument resolution [arcsec], gain}
 filt_wheel = {
@@ -62,33 +57,9 @@ for i, image in enumerate(image_files):
         print("SB:", lim, "mag arcsec^-2", flush=True)
         print("Mock Image:", image_mock, flush=True)
 
-        ptm.output_pristine_fits_image(
-            image, image_mock, filt_wheel
-        )  # Setup image for mock creation
-        ptm.convolve_with_fwhm(image_mock, filt_wheel)  # Convolve mock image with PSF
-        ptm.add_simple_noise(
-            image_mock, sb_maglim=lim, alg="Snyder2019"
-        )  # Add noise model
-
-        candels_args = obs.make_candels_args(field_info, realsim_input_dir)
-        obs.ObsRealism(
-            image_mock, candels_args
-        )  # Apply RealSim CANDELS fields
-
-        seg, kernel, errmap = am.detect_sources(
-            image_mock, ext_name="RealSim", filt_wheel=filt_wheel
-        )  # Run source detection with photutils
-
-        seg = am.deblend_sources(
-            image_mock, seg, kernel, errmap, ext_name="RealSim"
-        )  # Deblend detected sources
-
         source_morph = am.source_morphology(
             image_mock,
-            seg,
-            errmap=errmap,
             ext_name="RealSim",
-            props_ext_name="DEBLEND_PROPS",
         )  # Calculate morphological parameters using statmorph
 
         am.save_morph_params(
