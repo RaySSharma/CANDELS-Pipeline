@@ -82,15 +82,3 @@ for i, image in enumerate(image_files):
         seg = am.deblend_sources(
             image_mock, seg, kernel, errmap, ext_name="RealSim"
         )  # Deblend detected sources
-
-        source_morph = am.source_morphology(
-            image_mock,
-            seg,
-            errmap=errmap,
-            ext_name="RealSim",
-            props_ext_name="DEBLEND_PROPS",
-        )  # Calculate morphological parameters using statmorph
-
-        am.save_morph_params(
-            image_mock, source_morph, fig_name=fig_name, **morph_params
-        )  # Save morph params to HDU, generate statmorph image of params
