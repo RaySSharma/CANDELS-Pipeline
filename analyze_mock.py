@@ -139,7 +139,7 @@ def source_morphology(in_image, ext_name):
     hdu = fo[ext_name]
 
     segm_obj = fo['DEBLEND']
-    errmap = fo['WEIGHT_MAP']
+    errmap = fo['WEIGHT_MAP'].data
     seg_props = fo['DEBLEND_PROPS'].data
     im = hdu.data
 
