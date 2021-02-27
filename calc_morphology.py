@@ -57,11 +57,15 @@ for i, image in enumerate(image_files):
         print("SB:", lim, "mag arcsec^-2", flush=True)
         print("Mock Image:", image_mock, flush=True)
 
-        source_morph = am.source_morphology(
-            image_mock,
-            ext_name="RealSim",
-        )  # Calculate morphological parameters using statmorph
+        try:
+            source_morph = am.source_morphology(
+                image_mock,
+                ext_name="RealSim",
+            )  # Calculate morphological parameters using statmorph
 
-        am.save_morph_params(
-            image_mock, source_morph, fig_name=fig_name, **morph_params
-        )  # Save morph params to HDU, generate statmorph image of params
+            am.save_morph_params(
+                image_mock, source_morph, fig_name=fig_name, **morph_params
+            )  # Save morph params to HDU, generate statmorph image of params
+        except KeyError as err:
+            print(err, '-', image_mock, 'not processed, skipping fit.')
+            continue
