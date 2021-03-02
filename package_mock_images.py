@@ -61,8 +61,7 @@ def gather_bh_lum(im):
     except FileNotFoundError:
         print("No bh_sed.npz found.")
         TOTAL_MISSING_BH_SED += 1
-        lum = np.nan
-        # lum_obsc = np.nan
+        lum = -1
     return lum
 
 
@@ -87,9 +86,9 @@ def gather_halo_properties(halo_num, timestep):
             Mgas = findall("[0-9].[0-9]*e\+[0-9]*", lines[18])[0]
         except IndexError:
             print("No halo parameters found.")
-            Mstar = np.nan
-            M200 = np.nan
-            Mgas = np.nan
+            Mstar = -1
+            M200 = -1
+            Mgas = -1
     return Mstar, M200, Mgas
 
 
