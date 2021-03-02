@@ -78,17 +78,17 @@ def gather_halo_properties(halo_num, timestep):
         Mgas {str} -- Total gas mass
     """
     info_file = SIMULATION_DIR + halo_num + "/info_" + timestep + ".txt"
-    with open(info_file) as f:
-        lines = f.readlines()
-        try:
+    try:
+        with open(info_file) as f:
+            lines = f.readlines()
             Mstar = findall("[0-9].[0-9]*e\+[0-9]*", lines[17])[0]
             M200 = findall("[0-9].[0-9]*e\+[0-9]*", lines[11])[0]
             Mgas = findall("[0-9].[0-9]*e\+[0-9]*", lines[18])[0]
-        except IndexError:
-            print("No halo parameters found.")
-            Mstar = -1
-            M200 = -1
-            Mgas = -1
+    except (IndexError, FileNotFoundError) as err:
+        print("No halo parameters found.")
+        Mstar = -1
+        M200 = -1
+        Mgas = -1
     return Mstar, M200, Mgas
 
 
@@ -174,7 +174,11 @@ for i, image in enumerate(image_files):
         if PACKAGE_MOCK_IMAGES:
             data = f["MockImage"].data
             header = f["MockImage"].header
-            morphology = f["SOURCE_MORPH"].header
+            try:
+                morphology = f["SOURCE_MORPH"].header
+            except:
+                print("No SOURCE_MORPH header")
+                continue
             redshift = header["REDSHIFT"]
             gathered_data = gather_data(image, morphology, redshift)
 
