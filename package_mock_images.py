@@ -78,9 +78,9 @@ def gather_halo_properties(halo_num, timestep):
     info_file = SIMULATION_DIR + halo_num + "/info_" + timestep + ".txt"
     with open(info_file) as f:
         lines = f.readlines()
-        Mstar = findall("[0-9].[0-9]*e\+[0-9]*", lines[14])[0]
-        M200 = findall("[0-9].[0-9]*e\+[0-9]*", lines[8])[0]
-        Mgas = findall("[0-9].[0-9]*e\+[0-9]*", lines[15])[0]
+        Mstar = findall("[0-9].[0-9]*e\+[0-9]*", lines[17])[0]
+        M200 = findall("[0-9].[0-9]*e\+[0-9]*", lines[11])[0]
+        Mgas = findall("[0-9].[0-9]*e\+[0-9]*", lines[18])[0]
     return Mstar, M200, Mgas
 
 

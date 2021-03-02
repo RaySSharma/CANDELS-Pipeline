@@ -153,11 +153,14 @@ def source_morphology(in_image, ext_name):
     segmap = segm_obj.data
     central_index = seg_props['id'] == center_slice[0, 0]
 
-    source_morph = statmorph.source_morphology(im, segmap, weightmap=errmap)
-    fo.close()
     try:
+        source_morph = statmorph.source_morphology(im, segmap, weightmap=errmap)
+        fo.flush()
+        fo.close()
         return np.array(source_morph)[central_index][0]
     except IndexError:
+        fo.flush()
+        fo.close()
         return None
 
 
