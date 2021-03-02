@@ -18,7 +18,7 @@ SIMULATION_DIR = "/projects/somerville/GADGET-3/Fiducial_Models/Fiducial_withAGN
 IMAGE_INPUT_DIR = "/scratch/rss230/AGN-Obscuration/outputs/*/*/WFC3_F160W/[3-5]/"
 PACKAGED_IMAGE_OUTPUT_DIR = "/scratch/rss230/sharma_choi_images/orig_images/"
 PARAMETER_OUTPUT_FILE = (
-    "/home/rss230/AGN-Obscuration/outputs/data_SB" + SB_LIMIT + ".h5"
+    "/scratch/rss230/AGN-Obscuration/outputs/data_SB" + SB_LIMIT + ".h5"
 )
 MORPH_PARAMS = {
     "GINI": "gini",
@@ -140,7 +140,7 @@ def gather_data(im, morph, z):
         Mstar,
         M200,
         Mgas,
-        morph_params,
+        *morph_params,
     ]
     return image_data
 

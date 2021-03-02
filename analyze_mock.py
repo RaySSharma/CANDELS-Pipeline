@@ -15,7 +15,7 @@ from statmorph.utils.image_diagnostics import make_figure
 
 # Run basic source detection
 def detect_sources(in_image, ext_name, filt_wheel, **kwargs):
-    fo = fits.open(in_image, 'append')
+    fo = fits.open(in_image, "append")
     hdu = fo[ext_name]
 
     # build kernel for pre-filtering.  How big?
@@ -24,80 +24,86 @@ def detect_sources(in_image, ext_name, filt_wheel, **kwargs):
 
     kernel_kpc_fwhm = 5.0
     kernel_arcsec_fwhm = kernel_kpc_fwhm / typical_kpc_per_arcsec
-    kernel_pixel_fwhm = kernel_arcsec_fwhm / hdu.header['PIXSIZE']
+    kernel_pixel_fwhm = kernel_arcsec_fwhm / hdu.header["PIXSIZE"]
 
     sigma = kernel_pixel_fwhm * gaussian_fwhm_to_sigma
     nsize = int(5 * kernel_pixel_fwhm)
     kernel = Gaussian2DKernel(sigma, x_size=nsize, y_size=nsize)
 
     bkg_estimator = photutils.MedianBackground()
-    bkg = photutils.Background2D(hdu.data, (50, 50),
-                                 bkg_estimator=bkg_estimator)
-    thresh = bkg.background + (5. * bkg.background_rms)
-    segmap_obj = photutils.detect_sources(hdu.data, thresh, npixels=5,
-                                          filter_kernel=kernel, **kwargs)
+    bkg = photutils.Background2D(hdu.data, (50, 50), bkg_estimator=bkg_estimator)
+    thresh = bkg.background + (5.0 * bkg.background_rms)
+    segmap_obj = photutils.detect_sources(
+        hdu.data, thresh, npixels=5, filter_kernel=kernel, **kwargs
+    )
 
     if segmap_obj is None:
         nhdu = fits.ImageHDU()
-        nhdu.header['EXTNAME'] = 'SEGMAP'
+        nhdu.header["EXTNAME"] = "SEGMAP"
         fo.append(nhdu)
 
         thdu = fits.BinTableHDU()
-        thdu.header['EXTNAME'] = 'SEGMAP_PROPS'
+        thdu.header["EXTNAME"] = "SEGMAP_PROPS"
         fo.append(thdu)
 
         fo.flush()
         fo.close()
         return None, None, None
+    else:
+        # Error image can be computed with photutils plus a GAIN keyword -- ratio of flux units to counts
+        gain = filt_wheel[hdu.header["FILTER"]][2]
+        errmap = calc_total_error(hdu.data, bkg.background_rms, effective_gain=gain)
 
-    # Error image can be computed with photutils plus a GAIN keyword -- ratio of flux units to counts
-    gain = filt_wheel[hdu.header['FILTER']][2]
-    errmap = calc_total_error(hdu.data, bkg.background_rms, effective_gain=gain)
+        segmap = segmap_obj.data
+        props = photutils.source_properties(hdu.data, segmap, errmap)
+        props_table = astropy.table.Table(props.to_table())
+        # these give problems given their format/NoneType objects
+        props_table.remove_columns(
+            [
+                "sky_centroid",
+                "sky_centroid_icrs",
+                "source_sum_err",
+                "background_sum",
+                "background_mean",
+                "background_at_centroid",
+            ]
+        )
+        nhdu = fits.ImageHDU(segmap)
 
-    segmap = segmap_obj.data
-    props = photutils.source_properties(hdu.data, segmap, errmap)
-    props_table = astropy.table.Table(props.to_table())
-    # these give problems given their format/NoneType objects
-    props_table.remove_columns([
-        'sky_centroid', 'sky_centroid_icrs', 'source_sum_err',
-        'background_sum', 'background_mean', 'background_at_centroid'
-    ])
-    nhdu = fits.ImageHDU(segmap)
+        # save segmap and info
+        nhdu.header["EXTNAME"] = "SEGMAP"
+        fo.append(nhdu)
 
-    # save segmap and info
-    nhdu.header['EXTNAME'] = 'SEGMAP'
-    fo.append(nhdu)
+        thdu = fits.BinTableHDU(props_table)
+        thdu.header["EXTNAME"] = "SEGMAP_PROPS"
+        fo.append(thdu)
 
-    thdu = fits.BinTableHDU(props_table)
-    thdu.header['EXTNAME'] = 'SEGMAP_PROPS'
-    fo.append(thdu)
+        fo.flush()
 
-    fo.flush()
+        nhdu = fits.ImageHDU(errmap)
 
-    nhdu = fits.ImageHDU(segmap)
+        # save errmap
+        nhdu.header["EXTNAME"] = "WEIGHT_MAP"
+        fo.append(nhdu)
 
-    # save errmap
-    nhdu.header['EXTNAME'] = 'WEIGHT_MAP'
-    fo.append(nhdu)
-
-    fo.flush()
-    fo.close()
+        fo.flush()
+        fo.close()
     return segmap_obj, kernel, errmap
 
 
 # Run PhotUtils Deblender
 def deblend_sources(in_image, segm_obj, kernel, errmap, ext_name):
-    fo = fits.open(in_image, 'append')
+    fo = fits.open(in_image, "append")
     hdu = fo[ext_name]
 
     if segm_obj is None:
         nhdu = fits.ImageHDU()
 
         # save segmap and info
-        nhdu.header['EXTNAME'] = 'DEBLEND'
+        nhdu.header["EXTNAME"] = "DEBLEND"
 
         thdu = fits.BinTableHDU()
-        thdu.header['EXTNAME'] = 'DEBLEND_PROPS'
+        thdu.header["EXTNAME"] = "DEBLEND_PROPS"
 
         fo.append(nhdu)
         fo.append(thdu)
@@ -106,24 +112,31 @@ def deblend_sources(in_image, segm_obj, kernel, errmap, ext_name):
         fo.close()
         return None
 
-    segm_obj = photutils.deblend_sources(hdu.data, segm_obj, npixels=5,
-                                         filter_kernel=kernel)
+    segm_obj = photutils.deblend_sources(
+        hdu.data, segm_obj, npixels=5, filter_kernel=kernel
+    )
     segmap = segm_obj.data
 
     props = photutils.source_properties(hdu.data, segmap, errmap)
     props_table = astropy.table.Table(props.to_table())
     # these give problems given their format/NoneType objects
-    props_table.remove_columns([
-        'sky_centroid', 'sky_centroid_icrs', 'source_sum_err',
-        'background_sum', 'background_mean', 'background_at_centroid'
-    ])
+    props_table.remove_columns(
+        [
+            "sky_centroid",
+            "sky_centroid_icrs",
+            "source_sum_err",
+            "background_sum",
+            "background_mean",
+            "background_at_centroid",
+        ]
+    )
     nhdu = fits.ImageHDU(segmap)
 
     # save segmap and info
-    nhdu.header['EXTNAME'] = 'DEBLEND'
+    nhdu.header["EXTNAME"] = "DEBLEND"
 
     thdu = fits.BinTableHDU(props_table)
-    thdu.header['EXTNAME'] = 'DEBLEND_PROPS'
+    thdu.header["EXTNAME"] = "DEBLEND_PROPS"
 
     fo.append(nhdu)
     fo.append(thdu)
@@ -135,50 +148,43 @@ def deblend_sources(in_image, segm_obj, kernel, errmap, ext_name):
 
 # Run morphology code
 def source_morphology(in_image, ext_name):
-    fo = fits.open(in_image, 'append')
+    fo = fits.open(in_image, "append")
     hdu = fo[ext_name]
 
-    segm_obj = fo['DEBLEND']
-    errmap = fo['WEIGHT_MAP'].data
-    seg_props = fo['DEBLEND_PROPS'].data
+    segm_obj = fo["DEBLEND"]
+    errmap = fo["WEIGHT_MAP"].data
+    seg_props = fo["DEBLEND_PROPS"].data
     im = hdu.data
 
     if segm_obj is None:
         return None
 
     npix = im.shape[0]
-    center_slice = segm_obj.data[int(npix / 2) - 2:int(npix / 2) + 2,
-                                 int(npix / 2) - 2:int(npix / 2) + 2]
+    center_slice = segm_obj.data[
+        int(npix / 2) - 2 : int(npix / 2) + 2, int(npix / 2) - 2 : int(npix / 2) + 2
+    ]
 
     segmap = segm_obj.data
-    central_index = seg_props['id'] == center_slice[0, 0]
+    central_index = seg_props["id"] == center_slice[0, 0]
 
+    fo.flush()
+    fo.close()
     try:
         source_morph = statmorph.source_morphology(im, segmap, weightmap=errmap)
-        fo.flush()
-        fo.close()
         return np.array(source_morph)[central_index][0]
     except IndexError:
-        fo.flush()
-        fo.close()
         return None
 
 
 def save_morph_params(in_image, source_morph, fig_name, **kwargs):
-    fo = fits.open(in_image, 'append')
+    fo = fits.open(in_image, "append")
     nhdu = fits.ImageHDU()
-    nhdu.header['EXTNAME'] = 'SOURCE_MORPH'
+    nhdu.header["EXTNAME"] = "SOURCE_MORPH"
 
     if source_morph is not None:
         if kwargs is not None:
             for key, value in kwargs.items():
                 nhdu.header[key] = source_morph[value]
-        fo.append(nhdu)
-        fo.flush()
-        fo.close()
-        fig = make_figure(source_morph)
-        fig.savefig(fig_name, dpi=150)
-    else:
-        fo.append(nhdu)
-        fo.flush()
-        fo.close()
+    fo.append(nhdu)
+    fo.flush()
+    fo.close()
