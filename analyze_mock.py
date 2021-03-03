@@ -156,9 +156,6 @@ def source_morphology(in_image, ext_name, **kwargs):
     seg_props = fo["DEBLEND_PROPS"].data
     im = hdu.data
 
-    if segm_obj is None:
-        return None
-
     npix = im.shape[0]
     center_slice = segm_obj.data[
         int(npix / 2) - 2 : int(npix / 2) + 2, int(npix / 2) - 2 : int(npix / 2) + 2
@@ -168,11 +165,8 @@ def source_morphology(in_image, ext_name, **kwargs):
 
     fo.flush()
     fo.close()
-    try:
-        source_morph = statmorph.SourceMorphology(im, segm_obj, central_index, weightmap=errmap, **kwargs)
-        return source_morph
-    except IndexError:
-        return None
+    source_morph = statmorph.SourceMorphology(im, segm_obj, central_index, weightmap=errmap, **kwargs)
+    return source_morph
 
 
 def save_morph_params(in_image, source_morph, **kwargs):
