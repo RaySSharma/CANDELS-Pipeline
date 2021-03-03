@@ -43,6 +43,6 @@ for i, image_mock in enumerate(image_files):
         am.save_morph_params(
             image_mock, source_morph, **morph_params
         )  # Save morph params to HDU, generate statmorph image of params
-    except (KeyError, IndexError, AttributeError, ValueError) as err:
+    except (KeyError, IndexError, AttributeError, ValueError, TypeError) as err:
         print(err, "-", image_mock, "not processed, skipping fit.")
         continue
