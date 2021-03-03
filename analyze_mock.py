@@ -7,6 +7,7 @@ import astropy.table
 import numpy as np
 import photutils
 from photutils.utils import calc_total_error
+from photutils.segmentation import SegmentationImage
 from astropy.stats import gaussian_fwhm_to_sigma
 from astropy.convolution import Gaussian2DKernel
 import statmorph
@@ -147,7 +148,6 @@ def deblend_sources(in_image, segm_obj, kernel, errmap, ext_name):
 
 # Run morphology code
 def source_morphology(in_image, ext_name, **kwargs):
-    from photutils.segmentation import SegmentationImage
     fo = fits.open(in_image, "append")
     hdu = fo[ext_name]
 
@@ -155,6 +155,10 @@ def source_morphology(in_image, ext_name, **kwargs):
     errmap = fo["WEIGHT_MAP"].data
     seg_props = fo["DEBLEND_PROPS"].data
     im = hdu.data
+
+    bkg_estimator = photutils.MedianBackground()
+    bkg = photutils.Background2D(hdu.data, (50, 50), bkg_estimator=bkg_estimator)
+    im -= bkg.background
 
     npix = im.shape[0]
     center_slice = segm_obj.data[
@@ -165,7 +169,9 @@ def source_morphology(in_image, ext_name, **kwargs):
 
     fo.flush()
     fo.close()
-    source_morph = statmorph.SourceMorphology(im, segm_obj, central_index, weightmap=errmap, **kwargs)
+    source_morph = statmorph.SourceMorphology(
+        im, segm_obj, central_index, weightmap=errmap, **kwargs
+    )
     return source_morph
 
 
