@@ -35,20 +35,6 @@ realsim_input_dir = "/scratch/rss230/CANDELS-Pipeline/RealSim/Inputs/"
 # mag/arcsec^2
 detection_limits = [25]
 
-# List of morphological parameters to calculate in statmorph
-morph_params = {
-    "GINI": "gini",
-    "M20": "m20",
-    "CONC": "concentration",
-    "ASYM": "asymmetry",
-    "SMOOTH": "smoothness",
-    "SERSIC_N": "sersic_n",
-    "M": "multimode",
-    "D": "deviation",
-    "I": "intensity",
-    "FLAG": "flag",
-    "FLAG_SERSIC": "flag_sersic",
-}
 image_loc = "/scratch/rss230/AGN-Obscuration/outputs/*/*/WFC3_F160W/[3-5]/"
 image_files = glob.glob(image_loc + "*.image.fits")
 

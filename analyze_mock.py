@@ -10,7 +10,6 @@ from photutils.utils import calc_total_error
 from astropy.stats import gaussian_fwhm_to_sigma
 from astropy.convolution import Gaussian2DKernel
 import statmorph
-from statmorph.utils.image_diagnostics import make_figure
 
 
 # Run basic source detection
@@ -147,11 +146,12 @@ def deblend_sources(in_image, segm_obj, kernel, errmap, ext_name):
 
 
 # Run morphology code
-def source_morphology(in_image, ext_name):
+def source_morphology(in_image, ext_name, **kwargs):
+    from photutils.segmentation import SegmentationImage
     fo = fits.open(in_image, "append")
     hdu = fo[ext_name]
 
-    segm_obj = fo["DEBLEND"]
+    segm_obj = SegmentationImage(fo["DEBLEND"].data)
     errmap = fo["WEIGHT_MAP"].data
     seg_props = fo["DEBLEND_PROPS"].data
     im = hdu.data
@@ -164,19 +164,18 @@ def source_morphology(in_image, ext_name):
         int(npix / 2) - 2 : int(npix / 2) + 2, int(npix / 2) - 2 : int(npix / 2) + 2
     ]
 
-    segmap = segm_obj.data
-    central_index = seg_props["id"] == center_slice[0, 0]
+    central_index = np.where(seg_props["id"] == center_slice[0, 0])[0][0]
 
     fo.flush()
     fo.close()
     try:
-        source_morph = statmorph.source_morphology(im, segmap, weightmap=errmap)
-        return np.array(source_morph)[central_index][0]
+        source_morph = statmorph.SourceMorphology(im, segm_obj, central_index, weightmap=errmap, **kwargs)
+        return source_morph
     except IndexError:
         return None
 
 
-def save_morph_params(in_image, source_morph, fig_name, **kwargs):
+def save_morph_params(in_image, source_morph, **kwargs):
     fo = fits.open(in_image, "append")
     nhdu = fits.ImageHDU()
     nhdu.header["EXTNAME"] = "SOURCE_MORPH"
