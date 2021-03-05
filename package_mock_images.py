@@ -15,8 +15,8 @@ OUTPUT_PARAMETERS = True
 NUM_RUNS = 1
 BH_MODEL = "Hopkins"
 SIMULATION_DIR = "/projects/somerville/GADGET-3/Fiducial_Models/Fiducial_withAGN_hdf/"
-IMAGE_INPUT_DIR = "/scratch/rss230/AGN-Obscuration/outputs/*/*/WFC3_F160W/[3-5]/"
-PACKAGED_IMAGE_OUTPUT_DIR = "/scratch/rss230/sharma_choi_images/orig_images/"
+IMAGE_INPUT_DIR = "/scratch/rss230/AGN-Mergers/outputs/*/*/WFC3_F160W/[3-5]/"
+PACKAGED_IMAGE_OUTPUT_DIR = "/scratch/rss230/sharma_choi_images/reduced_images/"
 PARAMETER_OUTPUT_FILE = (
     "/scratch/rss230/AGN-Obscuration/outputs/data_SB" + SB_LIMIT + ".h5"
 )
@@ -166,7 +166,16 @@ image_files = glob.glob(IMAGE_INPUT_DIR + "*.image.SB" + SB_LIMIT + ".fits")
 packaged_data = []
 for i, image in enumerate(image_files):
     print("Image:", image)
-    print("Image number:", i, "/", len(image_files))
+    print("Image number:", i + 1, "/", len(image_files))
+    image_number = str(int(image.split("/")[-2]) - 3)
+    packaged_filename = (
+        PACKAGED_IMAGE_OUTPUT_DIR
+        + os.path.basename(image)[:-5]
+        + "."
+        + image_number
+        + ".fits"
+    )
+
     with fits.open(image) as f:
         image_number = str(int(image.split("/")[-2]) - 3)
         packaged_filename = (
@@ -178,14 +187,18 @@ for i, image in enumerate(image_files):
         )
 
         if PACKAGE_MOCK_IMAGES:
-            data = f["MockImage"].data
-            header = f["MockImage"].header
+            hdu1 = f["RealSim"]
+            hdu2 = f["MockImage"]
+            hdu3 = f["SimulatedImage"]
+            f_out = fits.HDUList([hdu1, hdu2, hdu3])
+
             try:
                 morphology = f["SOURCE_MORPH"].header
             except:
                 print("No SOURCE_MORPH header")
                 continue
             redshift = header["REDSHIFT"]
+
             gathered_data = gather_data(image, morphology, redshift)
 
             header["MSTAR"] = (float(gathered_data[7]), "Msol")
@@ -193,8 +206,8 @@ for i, image in enumerate(image_files):
         else:
             data = f["SimulatedImage"].data
             header = f["SimulatedImage"].header
+            f_out = fits.PrimaryHDU(data=data, header=header)
 
-        f_out = fits.PrimaryHDU(data=data, header=header)
         save_hdu(f_out, packaged_filename)
 
 if OUTPUT_PARAMETERS and PACKAGE_MOCK_IMAGES:
