@@ -197,11 +197,8 @@ for i, image in enumerate(image_files):
             except:
                 print("No SOURCE_MORPH header")
                 continue
-            redshift = header["REDSHIFT"]
-
+            redshift = hdu3.header["REDSHIFT"]
             gathered_data = gather_data(image, morphology, redshift)
-
-            header["MSTAR"] = (float(gathered_data[7]), "Msol")
             packaged_data.append(gathered_data)
         else:
             data = f["SimulatedImage"].data
