@@ -138,7 +138,7 @@ def save_morph_params(in_image, source_morph, **kwargs):
         if kwargs is not None:
             for key, value in kwargs.items():
                 nhdu.header[key] = source_morph[value]
-    output_hdu(in_image, "SOURCE_MORPH", nhdu, nhdu.header)
+    output_hdu(in_image, "SOURCE_MORPH", nhdu.data, nhdu.header)
 
 
 def output_hdu(input_name, ext_name, data, header=None, table=False):
