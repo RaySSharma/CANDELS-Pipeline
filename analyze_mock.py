@@ -59,7 +59,7 @@ def detect_sources(input_name, filt_wheel, input_ext_name):
     )
 
     output_hdu(input_name, "SEGMAP", segmap)
-    output_hdu(input_name, "SEGMAP_PROPS", props_table)
+    output_hdu(input_name, "SEGMAP_PROPS", props_table, table=True)
     output_hdu(input_name, "WEIGHT_MAP", errmap)
     return segmap_obj, kernel, errmap
 
@@ -92,7 +92,7 @@ def deblend_sources(input_name, segm_obj, kernel, errmap, input_ext_name):
     )
 
     output_hdu(input_name, "DEBLEND", segmap)
-    output_hdu(input_name, "DEBLEND_PROPS", props_table)
+    output_hdu(input_name, "DEBLEND_PROPS", props_table, table=True)
     return segm_obj, props_table
 
 
@@ -142,12 +142,15 @@ def save_morph_params(in_image, source_morph, **kwargs):
     output_hdu(in_image, "SOURCE_MORPH", nhdu, nhdu.header)
 
 
-def output_hdu(input_name, ext_name, data, header=None):
+def output_hdu(input_name, ext_name, data, header=None, table=False):
     hdu_extnames = np.asarray(fits.info(input_name, output=False)).T[1]
     if ext_name in hdu_extnames:
         fits.update(input_name, data, header, ext_name)
     else:
         with fits.open(input_name, "append") as hdul:
-            hdu_out = fits.ImageHDU(data, header=header)
+            if table:
+                hdu_out = fits.BinTableHDU(data, header=header)
+            else:
+                hdu_out = fits.ImageHDU(data, header=header)
             hdu_out.header["EXTNAME"] = ext_name
             hdul.append(hdu_out)

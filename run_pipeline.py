@@ -57,7 +57,7 @@ GENERATE_REALSIM = True
 GENERATE_SEG = True
 GENERATE_MORPH = True
 
-image_files = glob.glob(IMAGE_DIR + "*.image.fits")
+image_files = glob.glob(IMAGE_DIR + "*.fits")
 deblend_seg, deblend_seg_props, errmap = None, None, None
 for i, image in enumerate(image_files):
     print("Image Number:", i, "/", len(image_files), flush=True)
