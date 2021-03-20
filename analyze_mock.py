@@ -120,9 +120,8 @@ def source_morphology(in_image, input_ext_name, segm_obj, seg_props, errmap, **k
         int(npix / 2) - 2 : int(npix / 2) + 2, int(npix / 2) - 2 : int(npix / 2) + 2
     ]
 
-    central_index = np.where(seg_props["id"] == center_slice[0, 0])[0][0]
-
     try:
+        central_index = np.where(seg_props["id"] == center_slice[0, 0])[0][0]
         source_morph = statmorph.SourceMorphology(
             im, segm_obj, central_index, weightmap=errmap, **kwargs
         )
