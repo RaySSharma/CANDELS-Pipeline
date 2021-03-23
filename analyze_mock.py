@@ -98,6 +98,8 @@ def deblend_sources(input_name, segm_obj, kernel, errmap, input_ext_name):
 
 # Run morphology code
 def source_morphology(in_image, input_ext_name, segm_obj, seg_props, errmap, **kwargs):
+    from scipy.stats import mode
+
     if segm_obj is None:
         with fits.open(in_image) as fo:
             try:
@@ -117,13 +119,14 @@ def source_morphology(in_image, input_ext_name, segm_obj, seg_props, errmap, **k
 
     npix = im.shape[0]
     center_slice = segm_obj.data[
-        int(npix / 2) - 2 : int(npix / 2) + 2, int(npix / 2) - 2 : int(npix / 2) + 2
+        int(npix / 2) - 5 : int(npix / 2) + 5, int(npix / 2) - 5 : int(npix / 2) + 5
     ]
 
     try:
-        central_index = np.where(seg_props["id"] == center_slice[0, 0])[0][0]
+        central_label = mode(center_slice.ravel()).mode[0]
+        #central_index = np.where(seg_props["id"] == center_slice[0, 0])[0][0]
         source_morph = statmorph.SourceMorphology(
-            im, segm_obj, central_index, weightmap=errmap, **kwargs
+            im, segm_obj, central_label, weightmap=errmap, **kwargs
         )
         return source_morph
     except (KeyError, IndexError, AttributeError, ValueError, TypeError) as err:
