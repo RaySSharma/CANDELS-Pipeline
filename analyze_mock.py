@@ -32,7 +32,7 @@ def detect_sources(input_name, filt_wheel, input_ext_name):
 
     bkg_estimator = photutils.MedianBackground()
     bkg = photutils.Background2D(data, (50, 50), bkg_estimator=bkg_estimator)
-    thresh = bkg.background + (5.0 * bkg.background_rms)
+    thresh = bkg.background + (1.2 * bkg.background_rms)
     segmap_obj = photutils.detect_sources(data, thresh, npixels=5, filter_kernel=kernel)
 
     # No segmap found
@@ -109,9 +109,8 @@ def source_morphology(in_image, input_ext_name, segm_obj, seg_props, errmap, **k
             except KeyError as err:
                 print(err, "-", "Segmaps not in fits file")
                 return None
-    else:
-        with fits.open(in_image) as fo:
-            im = fo[input_ext_name].data
+    with fits.open(in_image) as fo:
+        im = fo[input_ext_name].data
 
     bkg_estimator = photutils.MedianBackground()
     bkg = photutils.Background2D(im, (50, 50), bkg_estimator=bkg_estimator)
@@ -119,7 +118,7 @@ def source_morphology(in_image, input_ext_name, segm_obj, seg_props, errmap, **k
 
     npix = im.shape[0]
     center_slice = segm_obj.data[
-        int(npix / 2) - 5 : int(npix / 2) + 5, int(npix / 2) - 5 : int(npix / 2) + 5
+        int(npix / 2) - 3 : int(npix / 2) + 3, int(npix / 2) - 3 : int(npix / 2) + 3
     ]
 
     try:
@@ -147,7 +146,10 @@ def save_morph_params(in_image, source_morph, **kwargs):
 def output_hdu(input_name, ext_name, data, header=None, table=False):
     hdu_extnames = np.asarray(fits.info(input_name, output=False)).T[1]
     if ext_name in hdu_extnames:
-        fits.update(input_name, data, header, ext_name)
+        if table:
+            fits.update(input_name, data.as_array(), header, extname=ext_name)
+        else:
+            fits.update(input_name, data, header, extname=ext_name)
     else:
         with fits.open(input_name, "append") as hdul:
             if table:
