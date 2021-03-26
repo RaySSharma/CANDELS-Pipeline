@@ -64,11 +64,8 @@ for i, image in enumerate(image_files):
     print("Image:", image, flush=True)
 
     if GENERATE_MOCK:
-        ptm.output_pristine_fits_image(
-            image, image, FILT_WHEEL
-        )  # Setup image for mock creation
         ptm.convolve_with_fwhm(image, FILT_WHEEL)  # Convolve mock image with PSF
-        ptm.add_simple_noise(image, sb_maglim=25, alg="Snyder2019")  # Add noise model
+        ptm.add_simple_noise(image, sb_maglim=25)  # Add noise model
 
     if GENERATE_REALSIM:
         candels_args = obs.make_candels_args(FIELD_INFO, REALSIM_INPUT_DIR)
