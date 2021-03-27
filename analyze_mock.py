@@ -15,8 +15,9 @@ import statmorph
 
 # Run basic source detection
 def detect_sources(input_name, filt_wheel, input_ext_name):
-    data = fits.getdata(input_name, input_ext_name)
-    header = fits.getheader(input_name, input_ext_name)
+    with fits.open(input_name) as f:
+        data = f[input_ext_name].data
+        header = f[input_ext_name].header
 
     # build kernel for pre-filtering.  How big?
     # don't assume redshift knowledge here
@@ -123,7 +124,7 @@ def source_morphology(in_image, input_ext_name, segm_obj, seg_props, errmap, **k
 
     try:
         central_label = mode(center_slice.ravel()).mode[0]
-        #central_index = np.where(seg_props["id"] == center_slice[0, 0])[0][0]
+        # central_index = np.where(seg_props["id"] == center_slice[0, 0])[0][0]
         source_morph = statmorph.SourceMorphology(
             im, segm_obj, central_label, weightmap=errmap, **kwargs
         )
@@ -145,6 +146,12 @@ def save_morph_params(in_image, source_morph, **kwargs):
 
 def output_hdu(input_name, ext_name, data, header=None, table=False):
     hdu_extnames = np.asarray(fits.info(input_name, output=False)).T[1]
+
+    if header is None:
+        header = fits.Header()
+    
+    header["EXTNAME"] = ext_name
+
     if ext_name in hdu_extnames:
         if table:
             fits.update(input_name, data.as_array(), header, extname=ext_name)
@@ -156,5 +163,4 @@ def output_hdu(input_name, ext_name, data, header=None, table=False):
                 hdu_out = fits.BinTableHDU(data, header=header)
             else:
                 hdu_out = fits.ImageHDU(data, header=header)
-            hdu_out.header["EXTNAME"] = ext_name
             hdul.append(hdu_out)

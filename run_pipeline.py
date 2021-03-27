@@ -72,9 +72,7 @@ for i, image in enumerate(image_files):
         obs.ObsRealism(image, candels_args)  # Apply RealSim CANDELS fields
 
     if GENERATE_SEG:
-        seg, kernel, errmap = am.detect_sources(
-            image, input_ext_name="RealSim", filt_wheel=FILT_WHEEL
-        )  # Run source detection with photutils
+        seg, kernel, errmap = am.detect_sources(image, input_ext_name="RealSim", filt_wheel=FILT_WHEEL)  # Run source detection with photutils
 
         deblend_seg, deblend_seg_props = am.deblend_sources(
             image, seg, kernel, errmap, input_ext_name="RealSim"
