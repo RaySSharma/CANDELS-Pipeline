@@ -1,5 +1,6 @@
 import glob
 import os
+import tqdm
 import numpy as np
 import pandas as pd
 import astropy.io.fits as fits
@@ -15,11 +16,11 @@ OUTPUT_PARAMETERS = True
 NUM_RUNS = 1
 BH_MODEL = "Hopkins"
 SIMULATION_DIR = "/projects/somerville/GADGET-3/Fiducial_Models/Fiducial_withAGN_hdf/"
-IMAGE_INPUT_DIR = "/scratch/rss230/AGN-Mergers/outputs/*/*/WFC3_F160W/[3-5]/"
-PACKAGED_IMAGE_OUTPUT_DIR = "/scratch/rss230/sharma_choi_images/reduced_images/"
+IMAGE_INPUT_DIR = "/scratch/rss230/sharma_choi_images/realsim_images/"
 PARAMETER_OUTPUT_FILE = (
-    "/scratch/rss230/AGN-Obscuration/outputs/data_SB" + SB_LIMIT + ".h5"
+    "/scratch/rss230/AGN-Mergers/outputs/data_SB" + SB_LIMIT + ".h5"
 )
+BH_SED_DIR = "/scratch/rss230/AGN-Mergers/outputs/"
 MORPH_PARAMS = {
     "GINI": "gini",
     "M20": "m20",
@@ -40,6 +41,7 @@ MORPH_PARAMS = {
     "FLAG_SERSIC": "flag_sersic",
 }
 TOTAL_MISSING_BH_SED = 0
+BAD_VAL = -99
 
 
 def save_hdu(hdu, filename):
@@ -47,7 +49,7 @@ def save_hdu(hdu, filename):
     print("Output image:", filename)
 
 
-def gather_bh_lum(im):
+def gather_bh_lum(halo_num, timestep, orientation):
     """Gather BH properties from Powderday bh_sed.npz file
     
     Arguments:
@@ -59,7 +61,18 @@ def gather_bh_lum(im):
     global TOTAL_MISSING_BH_SED
 
     try:
-        with np.load(os.path.dirname(im) + "/bh_sed.npz") as bh_sed:
+        im_num = str(int(orientation) + 3)
+        bh_file = (
+            BH_SED_DIR
+            + halo_num
+            + "/"
+            + timestep
+            + "/"
+            + "WFC3_F160W/"
+            + im_num
+            + "/bh_sed.npz"
+        )
+        with np.load(bh_file) as bh_sed:
             lum = bh_sed["luminosity"].sum()
             # fnu = bh_sed['fnu']
             # nu = bh_sed['nu']
@@ -67,7 +80,7 @@ def gather_bh_lum(im):
     except FileNotFoundError:
         print("No bh_sed.npz found.")
         TOTAL_MISSING_BH_SED += 1
-        lum = -1
+        lum = BAD_VAL
     return lum
 
 
@@ -92,9 +105,9 @@ def gather_halo_properties(halo_num, timestep):
             Mgas = findall("[0-9].[0-9]*e\+[0-9]*", lines[18])[0]
     except (IndexError, FileNotFoundError) as err:
         print("No halo parameters found.")
-        Mstar = -1
-        M200 = -1
-        Mgas = -1
+        Mstar = BAD_VAL
+        M200 = BAD_VAL
+        Mgas = BAD_VAL
     return Mstar, M200, Mgas
 
 
@@ -115,8 +128,9 @@ def gather_sim_properties(im):
     timestep = halo_properties[1]
     filter_name = halo_properties[2]
     SB = halo_properties[4]
+    orientation = halo_properties[5]
 
-    return halo_num, timestep, filter_name, SB
+    return halo_num, timestep, filter_name, SB, orientation
 
 
 def gather_data(im, morph, z):
@@ -131,8 +145,8 @@ def gather_data(im, morph, z):
     Returns:
         np.array -- Data to export
     """
-    lum = gather_bh_lum(im)
-    halo_num, timestep, filter_name, SB = gather_sim_properties(im)
+    halo_num, timestep, filter_name, SB, orientation = gather_sim_properties(im)
+    lum = gather_bh_lum(halo_num, timestep, orientation)
     morph_params = gather_morph_params(morph)
     Mstar, M200, Mgas = gather_halo_properties(halo_num, timestep)
     image_data = [
@@ -141,7 +155,7 @@ def gather_data(im, morph, z):
         z,
         filter_name,
         SB,
-        BH_MODEL,
+        os.path.basename(im),
         lum,
         Mstar,
         M200,
@@ -157,40 +171,19 @@ def gather_morph_params(morph):
         try:
             params.append(morph[par])
         except KeyError:
-            params.append(np.nan)
+            params.append(BAD_VAL)
     return params
 
 
-image_files = glob.glob(IMAGE_INPUT_DIR + "*.image.SB" + SB_LIMIT + ".fits")
+image_files = glob.glob(IMAGE_INPUT_DIR + "*.fits")
 
 packaged_data = []
-for i, image in enumerate(image_files):
-    print("Image:", image)
-    print("Image number:", i + 1, "/", len(image_files))
-    image_number = str(int(image.split("/")[-2]) - 3)
-    packaged_filename = (
-        PACKAGED_IMAGE_OUTPUT_DIR
-        + os.path.basename(image)[:-5]
-        + "."
-        + image_number
-        + ".fits"
-    )
+for i, image in enumerate(tqdm.tqdm(image_files)):
 
     with fits.open(image) as f:
-        image_number = str(int(image.split("/")[-2]) - 3)
-        packaged_filename = (
-            PACKAGED_IMAGE_OUTPUT_DIR
-            + os.path.basename(image)[:-5]
-            + "."
-            + image_number
-            + ".fits"
-        )
-
         if PACKAGE_MOCK_IMAGES:
-            hdu1 = f["RealSim"]
-            hdu2 = f["MockImage"]
+            hdu0 = fits.PrimaryHDU()
             hdu3 = f["SimulatedImage"]
-            f_out = fits.HDUList([hdu1, hdu2, hdu3])
 
             try:
                 morphology = f["SOURCE_MORPH"].header
@@ -200,12 +193,6 @@ for i, image in enumerate(image_files):
             redshift = hdu3.header["REDSHIFT"]
             gathered_data = gather_data(image, morphology, redshift)
             packaged_data.append(gathered_data)
-        else:
-            data = f["SimulatedImage"].data
-            header = f["SimulatedImage"].header
-            f_out = fits.PrimaryHDU(data=data, header=header)
-
-        save_hdu(f_out, packaged_filename)
 
 if OUTPUT_PARAMETERS and PACKAGE_MOCK_IMAGES:
     columns = [
@@ -214,7 +201,7 @@ if OUTPUT_PARAMETERS and PACKAGE_MOCK_IMAGES:
         "redshift",
         "filter",
         "SB",
-        "bh_model",
+        "filename",
         "Lbol",
         "Mstar",
         "M200",
@@ -230,4 +217,3 @@ if OUTPUT_PARAMETERS and PACKAGE_MOCK_IMAGES:
 
     df = pd.concat([df1, df2], sort=True)
     df.to_hdf(PARAMETER_OUTPUT_FILE, key="data")
-
