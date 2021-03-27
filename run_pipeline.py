@@ -50,8 +50,8 @@ MORPH_PARAMS = {
     "FLAG": "flag",
     "FLAG_SERSIC": "flag_sersic",
 }
-REALSIM_INPUT_DIR = "/data2/ramonsharma/RealSim/Inputs/"
-IMAGE_DIR = "/data2/ramonsharma/backups/realsim_images/"
+REALSIM_INPUT_DIR = "/scratch/rss230/CANDELS-Pipeline/RealSim/Inputs/"
+IMAGE_DIR = "/scratch/rss230/sharma_choi_images/realsim_images/"
 GENERATE_MOCK = True
 GENERATE_REALSIM = True
 GENERATE_SEG = True

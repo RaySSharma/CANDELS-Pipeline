@@ -2,12 +2,9 @@
 # - Greg Snyder, Ray Sharma 2019
 
 import numpy as np
-import scipy.ndimage
 import scipy as sp
 import astropy.cosmology
-import astropy.constants as constants
 import astropy.io.fits as fits
-import astropy.units as u
 from astropy.stats import gaussian_fwhm_to_sigma
 
 '''
@@ -66,12 +63,13 @@ def convolve_with_fwhm(in_image, filt_wheel):
         image_in, sigma_pixels, mode="nearest"
     )
 
-    header_out = header_in
-    header_in["FWHMPIX"] = (sigma_pixels / gaussian_fwhm_to_sigma, "pixels")
-    header_in["SIGMAPIX"] = (sigma_pixels, "pixels")
-    header_in["FWHM"] = (fwhm_arcsec, "arcsec")
-    header_in["SIGMA"] = (sigma_arcsec, "arcsec")
-    header_in["PIXSIZE"] = (pixel_size_arcsec, "arcsec")
+    header_out = header_in.copy()
+    header_out["FWHMPIX"] = (sigma_pixels / gaussian_fwhm_to_sigma, "pixels")
+    header_out["SIGMAPIX"] = (sigma_pixels, "pixels")
+    header_out["FWHM"] = (fwhm_arcsec, "arcsec")
+    header_out["SIGMA"] = (sigma_arcsec, "arcsec")
+    header_out["PIXSIZE"] = (pixel_size_arcsec, "arcsec")
+    header_out["EXTNAME"] = "MockImage_Noiseless"
 
     output_hdu(in_image, "MockImage_Noiseless", data=image_out, header=header_out)
 
@@ -99,9 +97,10 @@ def add_simple_noise(in_image, sb_maglim, alg="Snyder2019"):
 
     image_out = image_in + noise_image
 
-    header_out = header_in
+    header_out = header_in.copy()
     header_out["SBLIM"] = (sb_maglim, "mag/arcsec^2")
     header_out["RMSNOISE"] = (sigma_njy, "nanojanskies")
+    header_out["EXTNAME"] = "MockImage"
     
     output_hdu(in_image, "MockImage", data=image_out, header=header_out)
 
