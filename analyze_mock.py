@@ -31,7 +31,7 @@ def detect_sources(input_name, filt_wheel, input_ext_name):
     nsize = int(5 * kernel_pixel_fwhm)
     kernel = Gaussian2DKernel(sigma, x_size=nsize, y_size=nsize)
 
-    bkg_estimator = photutils.MedianBackground()
+    bkg_estimator = photutils.SExtractorBackground() #photutils.MedianBackground()
     bkg = photutils.Background2D(data, (50, 50), bkg_estimator=bkg_estimator)
     thresh = bkg.background + (1.2 * bkg.background_rms)
     segmap_obj = photutils.detect_sources(data, thresh, npixels=5, filter_kernel=kernel)
@@ -98,7 +98,9 @@ def deblend_sources(input_name, segm_obj, kernel, errmap, input_ext_name):
 
 
 # Run morphology code
-def source_morphology(in_image, input_ext_name, segm_obj, seg_props, errmap, **kwargs):
+def source_morphology(
+    in_image, input_ext_name, segm_obj=None, seg_props=None, errmap=None, **kwargs
+):
     from scipy.stats import mode
 
     if segm_obj is None:
@@ -110,6 +112,7 @@ def source_morphology(in_image, input_ext_name, segm_obj, seg_props, errmap, **k
             except KeyError as err:
                 print(err, "-", "Segmaps not in fits file")
                 return None
+
     with fits.open(in_image) as fo:
         im = fo[input_ext_name].data
 
@@ -121,9 +124,10 @@ def source_morphology(in_image, input_ext_name, segm_obj, seg_props, errmap, **k
     center_slice = segm_obj.data[
         int(npix / 2) - 3 : int(npix / 2) + 3, int(npix / 2) - 3 : int(npix / 2) + 3
     ]
+    center_slice = center_slice[center_slice > 0].ravel()
 
     try:
-        central_label = mode(center_slice.ravel()).mode[0]
+        central_label = mode(center_slice).mode[0]
         # central_index = np.where(seg_props["id"] == center_slice[0, 0])[0][0]
         source_morph = statmorph.SourceMorphology(
             im, segm_obj, central_label, weightmap=errmap, **kwargs
@@ -145,11 +149,11 @@ def save_morph_params(in_image, source_morph, **kwargs):
 
 
 def output_hdu(input_name, ext_name, data, header=None, table=False):
-    hdu_extnames = np.asarray(fits.info(input_name, output=False)).T[1]
+    hdu_extnames = np.asarray(fits.info(input_name, output=False), dtype=object).T[1]
 
     if header is None:
         header = fits.Header()
-    
+
     header["EXTNAME"] = ext_name
 
     if ext_name in hdu_extnames:

@@ -27,7 +27,7 @@ def convolve_with_fwhm(in_image, filt_wheel):
 
     # Redshift dim simulated image
     # A little tricky, input units here are nJy [~flux/Hz]
-    # If input units were [~flux*Angstrom], dimming would be (1+z)^5
+    # If input units were [~flux/Angstrom], dimming would be (1+z)^5
     z_dim = (1 + redshift) ** 3
     image_in /= z_dim
 
@@ -75,4 +75,21 @@ def add_simple_noise(in_image, sb_maglim, alg="Snyder2019"):
     header_out = header_in.copy()
     header_out["SBLIM"] = (sb_maglim, "mag/arcsec^2")
     header_out["RMSNOISE"] = (sigma_njy, "nanojanskies")
+    output_hdu(in_image, "MockImage_sky", data=image_out, header=header_out)
+
+
+# Converts nJy to e using CANDELS exptime + inverse sensitivity "PHOTFNU", calculates source shot noise, then converts back
+def add_shot_noise(in_image, field_info, field_name):
+    image_in, header_in= fits.getdata(in_image, "MockImage_Noiseless", header=True)
+    exp = field_info[field_name][2]
+    photfnu = field_info[field_name][3]
+
+    calibration = exp / 1e9 / photfnu
+    image_out = (
+        np.random.poisson(lam=image_in * calibration) / calibration
+    )  # Calculate poisson noise in electrons
+    header_out = header_in.copy()
+    header_out["field"] = field_name
+    header_out["exptime"] = exp
+    header_out["photfnu"] = photfnu
     output_hdu(in_image, "MockImage", data=image_out, header=header_out)
