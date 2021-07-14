@@ -116,10 +116,6 @@ def source_morphology(
     with fits.open(in_image) as fo:
         im = fo[input_ext_name].data
 
-    bkg_estimator = photutils.MedianBackground()
-    bkg = photutils.Background2D(im, (50, 50), bkg_estimator=bkg_estimator)
-    im -= bkg.background
-
     npix = im.shape[0]
     center_slice = segm_obj.data[
         int(npix / 2) - 3 : int(npix / 2) + 3, int(npix / 2) - 3 : int(npix / 2) + 3
