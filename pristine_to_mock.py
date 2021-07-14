@@ -25,12 +25,6 @@ def convolve_with_fwhm(in_image, filt_wheel):
     cosmology = astropy.cosmology.FlatLambdaCDM(0.72 * 100.0, 0.26, Ob0=0.044)
     kpc_per_arcsec = cosmology.kpc_proper_per_arcmin(redshift).value / 60.0
 
-    # Redshift dim simulated image
-    # A little tricky, input units here are nJy [~flux/Hz]
-    # If input units were [~flux/Angstrom], dimming would be (1+z)^5
-    z_dim = (1 + redshift) ** 3
-    image_in /= z_dim
-
     # calculate PSF width in pixel units
     pixel_size_arcsec = 2 * header_in["PIX_KPC"] / kpc_per_arcsec
     sigma_arcsec = fwhm_arcsec * gaussian_fwhm_to_sigma

@@ -117,8 +117,3 @@ if __name__ == "__main__":
         am.save_morph_params(
             image, source_morph, **MORPH_PARAMS
         )  # Save morph params to HDU, generate statmorph image of params
-
-    print('M20: {}'.format(source_morph.m20))
-    print('G: {}'.format(source_morph.gini))
-    print('A: {}'.format(source_morph.asymmetry))
-    print('C: {}'.format(source_morph.concentration))
