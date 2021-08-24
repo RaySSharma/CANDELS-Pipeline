@@ -64,9 +64,10 @@ MORPH_PARAMS = {
 }
 REALSIM_INPUT_DIR = "/scratch/rss230/CANDELS-Pipeline/RealSim/Inputs/"
 RANDOMIZE_CANDELS_FIELD = False
-GENERATE_MOCK = True
-GENERATE_REALSIM = True
+GENERATE_MOCK = False
+GENERATE_REALSIM = False
 GENERATE_SEG = True
+DEBLEND = False
 GENERATE_MORPH = True
 
 
@@ -101,7 +102,7 @@ if __name__ == "__main__":
         obs.ObsRealism(image, candels_args)  # Apply RealSim CANDELS fields
 
     if GENERATE_SEG:
-        seg, kernel, errmap = am.detect_sources(
+        seg, seg_props, errmap, kernel = am.detect_sources(
             image, input_ext_name="RealSim", filt_wheel=FILT_WHEEL
         )  # Run source detection with photutils
 
@@ -110,9 +111,15 @@ if __name__ == "__main__":
         )  # Deblend detected sources
 
     if GENERATE_MORPH:
-        source_morph = am.source_morphology(
-            image, "RealSim", deblend_seg, deblend_seg_props, errmap
-        )  # Calculate morphological parameters using statmorph
+        if DEBLEND:
+            source_morph = am.source_morphology(
+                image, "RealSim", deblend_seg, deblend_seg_props, errmap
+            )  # Calculate morphological parameters using statmorph with deblended segmap
+
+        else:
+            source_morph = am.source_morphology(
+                image, "RealSim", seg, seg_props, errmap
+            )  # Calculate morphological parameters using statmorph with original segmap
 
         am.save_morph_params(
             image, source_morph, **MORPH_PARAMS

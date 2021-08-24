@@ -31,7 +31,7 @@ def detect_sources(input_name, filt_wheel, input_ext_name):
     nsize = int(5 * kernel_pixel_fwhm)
     kernel = Gaussian2DKernel(sigma, x_size=nsize, y_size=nsize)
 
-    bkg_estimator = photutils.SExtractorBackground() #photutils.MedianBackground()
+    bkg_estimator = photutils.background.MedianBackground()
     bkg = photutils.Background2D(data, (50, 50), bkg_estimator=bkg_estimator)
     thresh = bkg.background + (1.2 * bkg.background_rms)
     segmap_obj = photutils.detect_sources(data, thresh, npixels=5, filter_kernel=kernel)
@@ -62,7 +62,7 @@ def detect_sources(input_name, filt_wheel, input_ext_name):
     output_hdu(input_name, "SEGMAP", segmap)
     output_hdu(input_name, "SEGMAP_PROPS", props_table, table=True)
     output_hdu(input_name, "WEIGHT_MAP", errmap)
-    return segmap_obj, kernel, errmap
+    return segmap_obj, props_table, errmap, kernel
 
 
 # Run PhotUtils Deblender

@@ -16,9 +16,9 @@ OUTPUT_PARAMETERS = True
 NUM_RUNS = 1
 BH_MODEL = "Hopkins"
 SIMULATION_DIR = "/projects/somerville/GADGET-3/Fiducial_Models/Fiducial_withAGN_hdf/"
-IMAGE_INPUT_DIR = "/scratch/rss230/sharma_choi_images/realsim_images/"
+IMAGE_INPUT_DIR = "/scratch/rss230/sharma_choi_images/realsim_images_071321/"
 PARAMETER_OUTPUT_FILE = (
-    "/scratch/rss230/AGN-Mergers/outputs/data_SB" + SB_LIMIT + ".h5"
+    "/scratch/rss230/AGN-Mergers/outputs/data_SB" + SB_LIMIT + ".h5_071321"
 )
 BH_SED_DIR = "/scratch/rss230/AGN-Mergers/outputs/"
 MORPH_PARAMS = {
