@@ -108,7 +108,6 @@ def source_morphology(
             try:
                 segm_obj = SegmentationImage(fo["DEBLEND"].data)
                 errmap = fo["WEIGHT_MAP"].data
-                gain = filt_wheel[fo[input_ext_name].header["FILTER"]][2]
                 seg_props = fo["DEBLEND_PROPS"].data
             except KeyError as err:
                 print(err, "-", "Segmaps not in fits file")
@@ -116,6 +115,8 @@ def source_morphology(
 
     with fits.open(in_image) as fo:
         im = fo[input_ext_name].data
+        gain = filt_wheel[fo[input_ext_name].header["FILTER"]][2]
+    
 
     npix = im.shape[0]
     center_slice = segm_obj.data[
