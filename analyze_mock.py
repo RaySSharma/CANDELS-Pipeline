@@ -33,7 +33,7 @@ def detect_sources(input_name, filt_wheel, input_ext_name):
 
     bkg_estimator = photutils.background.MedianBackground()
     bkg = photutils.Background2D(data, (50, 50), bkg_estimator=bkg_estimator)
-    thresh = bkg.background + (1.2 * bkg.background_rms)
+    thresh = bkg.background + (1.5 * bkg.background_rms)
     segmap_obj = photutils.detect_sources(data, thresh, npixels=5, filter_kernel=kernel)
 
     # No segmap found
@@ -99,7 +99,7 @@ def deblend_sources(input_name, segm_obj, kernel, errmap, input_ext_name):
 
 # Run morphology code
 def source_morphology(
-    in_image, input_ext_name, segm_obj=None, seg_props=None, errmap=None, **kwargs
+    in_image, input_ext_name, filt_wheel, segm_obj=None, seg_props=None, errmap=None, **kwargs
 ):
     from scipy.stats import mode
 
@@ -108,6 +108,7 @@ def source_morphology(
             try:
                 segm_obj = SegmentationImage(fo["DEBLEND"].data)
                 errmap = fo["WEIGHT_MAP"].data
+                gain = filt_wheel[fo[input_ext_name].header["FILTER"]][2]
                 seg_props = fo["DEBLEND_PROPS"].data
             except KeyError as err:
                 print(err, "-", "Segmaps not in fits file")
@@ -126,7 +127,7 @@ def source_morphology(
         central_label = mode(center_slice).mode[0]
         # central_index = np.where(seg_props["id"] == center_slice[0, 0])[0][0]
         source_morph = statmorph.SourceMorphology(
-            im, segm_obj, central_label, weightmap=errmap, **kwargs
+            im, segm_obj, central_label, gain=gain, **kwargs
         )
         return source_morph
     except (KeyError, IndexError, AttributeError, ValueError, TypeError) as err:

@@ -67,7 +67,7 @@ RANDOMIZE_CANDELS_FIELD = False
 GENERATE_MOCK = False
 GENERATE_REALSIM = False
 GENERATE_SEG = True
-DEBLEND = False
+DEBLEND = True
 GENERATE_MORPH = True
 
 
@@ -106,14 +106,14 @@ if __name__ == "__main__":
             image, input_ext_name="RealSim", filt_wheel=FILT_WHEEL
         )  # Run source detection with photutils
 
-        deblend_seg, deblend_seg_props = am.deblend_sources(
-            image, seg, kernel, errmap, input_ext_name="RealSim"
-        )  # Deblend detected sources
-
     if GENERATE_MORPH:
         if DEBLEND:
+            deblend_seg, deblend_seg_props = am.deblend_sources(
+                image, seg, kernel, errmap, input_ext_name="RealSim"
+            )  # Deblend detected sources
+
             source_morph = am.source_morphology(
-                image, "RealSim", deblend_seg, deblend_seg_props, errmap
+                image, "RealSim", FILT_WHEEL, deblend_seg, deblend_seg_props, errmap
             )  # Calculate morphological parameters using statmorph with deblended segmap
 
         else:
