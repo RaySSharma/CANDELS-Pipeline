@@ -14,13 +14,18 @@ import statmorph
 
 
 # Run basic source detection
-def detect_sources(input_name, input_ext_name, gain=2.4):
+def detect_sources(input_name, input_ext_name, gain=2.4, photfnu=1.5e-07):
     with fits.open(input_name) as f:
         data = f[input_ext_name].data
         header = f[input_ext_name].header
     
+    try:
+        photfnu = header['PHOTFNU']
+    except KeyError:
+        pass
+
     # Convert nJy to counts
-    data /= (1e9 * header['PHOTFNU'] * gain)
+    data /= (1e9 * photfnu * gain)
 
     # build kernel for pre-filtering.  How big?
     # don't assume redshift knowledge here
@@ -68,13 +73,18 @@ def detect_sources(input_name, input_ext_name, gain=2.4):
 
 
 # Run PhotUtils Deblender
-def deblend_sources(input_name, segm_obj, kernel, errmap, input_ext_name, gain=2.4):
+def deblend_sources(input_name, segm_obj, kernel, errmap, input_ext_name, gain=2.4, photfnu=1.5e-07):
     with fits.open(input_name) as f:
         data = f[input_ext_name].data
         header = f[input_ext_name].header
     
+    try:
+        photfnu = header['PHOTFNU']
+    except KeyError:
+        pass
+
     # Convert nJy to counts
-    data /= (1e9 * header['PHOTFNU'] * gain)
+    data /= (1e9 * photfnu * gain)
 
     # No segmap found, cannot deblend
     if segm_obj is None:
@@ -106,7 +116,7 @@ def deblend_sources(input_name, segm_obj, kernel, errmap, input_ext_name, gain=2
 
 # Run morphology code
 def source_morphology(
-    in_image, input_ext_name, segm_obj=None, errmap=None, bkg=None, gain=2.4, **kwargs
+    in_image, input_ext_name, segm_obj=None, errmap=None, bkg=None, gain=2.4, photfnu=1.5e-07, **kwargs
 ):
     from scipy.stats import mode
 
@@ -123,9 +133,14 @@ def source_morphology(
     with fits.open(in_image) as fo:
         im = fo[input_ext_name].data
         header = fo[input_ext_name].header
-    
+
+    try:
+        photfnu = header['PHOTFNU']
+    except KeyError:
+        pass
+
     # Convert nJy to counts
-    im /= (1e9 * header['PHOTFNU'] * gain)
+    im /= (1e9 * photfnu * gain)
     
     if bkg is None:
         import photutils
