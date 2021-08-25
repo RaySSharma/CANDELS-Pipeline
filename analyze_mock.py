@@ -36,8 +36,8 @@ def detect_sources(input_name, input_ext_name, gain=2.4):
 
     bkg_estimator = photutils.background.MedianBackground()
     bkg = photutils.Background2D(data, (25, 25), filter_size=(3, 3), bkg_estimator=bkg_estimator)
-    thresh = bkg.background + (1.5 * bkg.background_rms)
-    segmap_obj = photutils.detect_sources(data, thresh, npixels=5, filter_kernel=kernel)
+    thresh = bkg.background + (1.3 * bkg.background_rms)
+    segmap_obj = photutils.detect_sources(data, thresh, npixels=16, filter_kernel=kernel)
 
     # No segmap found
     if segmap_obj is None:
@@ -81,7 +81,7 @@ def deblend_sources(input_name, segm_obj, kernel, errmap, input_ext_name, gain=2
         return None
 
     segm_obj = photutils.deblend_sources(
-        data, segm_obj, npixels=5, filter_kernel=kernel
+        data, segm_obj, npixels=16, filter_kernel=kernel
     )
     segmap = segm_obj.data
 
