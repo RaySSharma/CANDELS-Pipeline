@@ -99,7 +99,7 @@ def deblend_sources(input_name, segm_obj, kernel, errmap, input_ext_name):
 
 # Run morphology code
 def source_morphology(
-    in_image, input_ext_name, filt_wheel, segm_obj=None, background=None, **kwargs
+    in_image, input_ext_name, filt_wheel, segm_obj=None, bkg=None, **kwargs
 ):
     from scipy.stats import mode
 
@@ -117,7 +117,7 @@ def source_morphology(
         im = fo[input_ext_name].data
         gain = filt_wheel[fo[input_ext_name].header["FILTER"]][2]
     
-    if background is None:
+    if bkg is None:
         import photutils
         bkg_estimator = photutils.background.MedianBackground()
         bkg = photutils.Background2D(im, (25, 25), filter_size=(3, 3), bkg_estimator=bkg_estimator)
