@@ -32,7 +32,7 @@ def detect_sources(input_name, filt_wheel, input_ext_name):
     kernel = Gaussian2DKernel(sigma, x_size=nsize, y_size=nsize)
 
     bkg_estimator = photutils.background.MedianBackground()
-    bkg = photutils.Background2D(data, (50, 50), bkg_estimator=bkg_estimator)
+    bkg = photutils.Background2D(data, (25, 25), filter_size=(3, 3), bkg_estimator=bkg_estimator)
     thresh = bkg.background + (1.5 * bkg.background_rms)
     segmap_obj = photutils.detect_sources(data, thresh, npixels=5, filter_kernel=kernel)
 
@@ -62,7 +62,7 @@ def detect_sources(input_name, filt_wheel, input_ext_name):
     output_hdu(input_name, "SEGMAP", segmap)
     output_hdu(input_name, "SEGMAP_PROPS", props_table, table=True)
     output_hdu(input_name, "WEIGHT_MAP", errmap)
-    return segmap_obj, props_table, errmap, kernel
+    return segmap_obj, errmap, kernel, bkg
 
 
 # Run PhotUtils Deblender
@@ -94,12 +94,12 @@ def deblend_sources(input_name, segm_obj, kernel, errmap, input_ext_name):
 
     output_hdu(input_name, "DEBLEND", segmap)
     output_hdu(input_name, "DEBLEND_PROPS", props_table, table=True)
-    return segm_obj, props_table
+    return segm_obj
 
 
 # Run morphology code
 def source_morphology(
-    in_image, input_ext_name, filt_wheel, segm_obj=None, seg_props=None, errmap=None, **kwargs
+    in_image, input_ext_name, filt_wheel, segm_obj=None, background=None, **kwargs
 ):
     from scipy.stats import mode
 
@@ -107,8 +107,8 @@ def source_morphology(
         with fits.open(in_image) as fo:
             try:
                 segm_obj = SegmentationImage(fo["DEBLEND"].data)
-                errmap = fo["WEIGHT_MAP"].data
-                seg_props = fo["DEBLEND_PROPS"].data
+                #errmap = fo["WEIGHT_MAP"].data
+                #seg_props = fo["DEBLEND_PROPS"].data
             except KeyError as err:
                 print(err, "-", "Segmaps not in fits file")
                 return None
@@ -117,6 +117,12 @@ def source_morphology(
         im = fo[input_ext_name].data
         gain = filt_wheel[fo[input_ext_name].header["FILTER"]][2]
     
+    if background is None:
+        import photutils
+        bkg_estimator = photutils.background.MedianBackground()
+        bkg = photutils.Background2D(im, (25, 25), filter_size=(3, 3), bkg_estimator=bkg_estimator)
+
+    im -= bkg.background
 
     npix = im.shape[0]
     center_slice = segm_obj.data[

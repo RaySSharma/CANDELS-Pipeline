@@ -21,25 +21,25 @@ FIELD_INFO = {
         "hlsp_candels_hst_wfc3_uds-tot-multiband_f160w_v1_cat.fits",
         "hlsp_candels_hst_wfc3_uds-tot_f160w_v1.0_drz.fits",
         3300,
-        1.5053973e-07
+        1.5053973e-07,
     ],
     "EGS": [
         "hlsp_candels_hst_wfc3_egs-tot-multiband_f160w_v1_cat.fits",
         "hlsp_candels_hst_wfc3_egs-tot-60mas_f160w_v1.0_drz.fits",
         3200,
-        1.518757e-07
+        1.518757e-07,
     ],
     "GS": [
         "hlsp_candels_hst_wfc3_goodss-tot-multiband_f160w_v1_cat.fits",
         "hlsp_candels_hst_wfc3_gs-tot_f160w_v1.0_drz.fits",
         3550,
-        1.5053973e-07
+        1.5053973e-07,
     ],
     "COS": [
         "hlsp_candels_hst_wfc3_cos-tot-multiband_f160w_v1_cat.fits",
         "hlsp_candels_hst_wfc3_cos-tot_f160w_v1.0_drz.fits",
         3200,
-        1.5053973e-07
+        1.5053973e-07,
     ],
 }
 # List of morphological parameters to calculate in statmorph
@@ -77,6 +77,7 @@ def choose_candels_field():
     else:
         try:
             import astropy.io.fits as fits
+
             field_name = fits.getheader(image, "RealSim")["CANDELS_FIELD"]
         except:
             field_name = np.random.choice(list(FIELD_INFO.keys()))
@@ -95,30 +96,34 @@ if __name__ == "__main__":
 
     if GENERATE_MOCK:
         ptm.convolve_with_fwhm(image, FILT_WHEEL)  # Convolve mock image with PSF
-        ptm.add_shot_noise(image, field_info=FIELD_INFO, field_name=candels_field)  # Add noise model
+        ptm.add_shot_noise(
+            image, field_info=FIELD_INFO, field_name=candels_field
+        )  # Add noise model
 
     if GENERATE_REALSIM:
-        candels_args = obs.make_candels_args(field_info=FIELD_INFO, input_dir=REALSIM_INPUT_DIR, field_name=candels_field)
+        candels_args = obs.make_candels_args(
+            field_info=FIELD_INFO, input_dir=REALSIM_INPUT_DIR, field_name=candels_field
+        )
         obs.ObsRealism(image, candels_args)  # Apply RealSim CANDELS fields
 
     if GENERATE_SEG:
-        seg, seg_props, errmap, kernel = am.detect_sources(
+        seg, errmap, kernel, sky_background = am.detect_sources(
             image, input_ext_name="RealSim", filt_wheel=FILT_WHEEL
         )  # Run source detection with photutils
 
     if GENERATE_MORPH:
         if DEBLEND:
-            deblend_seg, deblend_seg_props = am.deblend_sources(
+            deblend_seg = am.deblend_sources(
                 image, seg, kernel, errmap, input_ext_name="RealSim"
             )  # Deblend detected sources
 
             source_morph = am.source_morphology(
-                image, "RealSim", FILT_WHEEL, deblend_seg, deblend_seg_props, errmap
+                image, "RealSim", FILT_WHEEL, deblend_seg, sky_background
             )  # Calculate morphological parameters using statmorph with deblended segmap
 
         else:
             source_morph = am.source_morphology(
-                image, "RealSim", seg, seg_props, errmap
+                image, "RealSim", seg, sky_background
             )  # Calculate morphological parameters using statmorph with original segmap
 
         am.save_morph_params(
