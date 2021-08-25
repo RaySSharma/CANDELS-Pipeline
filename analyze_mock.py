@@ -14,10 +14,13 @@ import statmorph
 
 
 # Run basic source detection
-def detect_sources(input_name, filt_wheel, input_ext_name):
+def detect_sources(input_name, input_ext_name, gain=2.4):
     with fits.open(input_name) as f:
         data = f[input_ext_name].data
         header = f[input_ext_name].header
+    
+    # Convert nJy to counts
+    data /= (1e9 * header['PHOTFNU'] * gain)
 
     # build kernel for pre-filtering.  How big?
     # don't assume redshift knowledge here
@@ -41,7 +44,6 @@ def detect_sources(input_name, filt_wheel, input_ext_name):
         return None, None, None
 
     # Error image can be computed with photutils plus a GAIN keyword -- ratio of flux units to counts
-    gain = filt_wheel[header["FILTER"]][2]
     errmap = calc_total_error(data, bkg.background_rms, effective_gain=gain)
 
     segmap = segmap_obj.data
@@ -66,8 +68,13 @@ def detect_sources(input_name, filt_wheel, input_ext_name):
 
 
 # Run PhotUtils Deblender
-def deblend_sources(input_name, segm_obj, kernel, errmap, input_ext_name):
-    data = fits.getdata(input_name, input_ext_name)
+def deblend_sources(input_name, segm_obj, kernel, errmap, input_ext_name, gain=2.4):
+    with fits.open(input_name) as f:
+        data = f[input_ext_name].data
+        header = f[input_ext_name].header
+    
+    # Convert nJy to counts
+    data /= (1e9 * header['PHOTFNU'] * gain)
 
     # No segmap found, cannot deblend
     if segm_obj is None:
@@ -99,7 +106,7 @@ def deblend_sources(input_name, segm_obj, kernel, errmap, input_ext_name):
 
 # Run morphology code
 def source_morphology(
-    in_image, input_ext_name, filt_wheel, segm_obj=None, bkg=None, **kwargs
+    in_image, input_ext_name, segm_obj=None, errmap=None, bkg=None, gain=2.4, **kwargs
 ):
     from scipy.stats import mode
 
@@ -107,7 +114,7 @@ def source_morphology(
         with fits.open(in_image) as fo:
             try:
                 segm_obj = SegmentationImage(fo["DEBLEND"].data)
-                #errmap = fo["WEIGHT_MAP"].data
+                errmap = fo["WEIGHT_MAP"].data
                 #seg_props = fo["DEBLEND_PROPS"].data
             except KeyError as err:
                 print(err, "-", "Segmaps not in fits file")
@@ -115,7 +122,10 @@ def source_morphology(
 
     with fits.open(in_image) as fo:
         im = fo[input_ext_name].data
-        gain = filt_wheel[fo[input_ext_name].header["FILTER"]][2]
+        header = fo[input_ext_name].header
+    
+    # Convert nJy to counts
+    im /= (1e9 * header['PHOTFNU'] * gain)
     
     if bkg is None:
         import photutils
@@ -134,7 +144,7 @@ def source_morphology(
         central_label = mode(center_slice).mode[0]
         # central_index = np.where(seg_props["id"] == center_slice[0, 0])[0][0]
         source_morph = statmorph.SourceMorphology(
-            im, segm_obj, central_label, gain=gain, **kwargs
+            im, segm_obj, central_label, weightmap=errmap, **kwargs
         )
         return source_morph
     except (KeyError, IndexError, AttributeError, ValueError, TypeError) as err:

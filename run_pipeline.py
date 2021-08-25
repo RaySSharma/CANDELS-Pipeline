@@ -106,25 +106,32 @@ if __name__ == "__main__":
         )
         obs.ObsRealism(image, candels_args)  # Apply RealSim CANDELS fields
 
+    gain = FILT_WHEEL["WFC3_F160W"][2]
+
     if GENERATE_SEG:
         seg, errmap, kernel, sky_background = am.detect_sources(
-            image, input_ext_name="RealSim", filt_wheel=FILT_WHEEL
+            image, input_ext_name="RealSim", gain=gain
         )  # Run source detection with photutils
 
     if GENERATE_MORPH:
         if DEBLEND:
-            deblend_seg = am.deblend_sources(
-                image, seg, kernel, errmap, input_ext_name="RealSim"
+            seg = am.deblend_sources(
+                image,
+                segm_obj=seg,
+                kernel=kernel,
+                errmap=errmap,
+                input_ext_name="RealSim",
+                gain=gain,
             )  # Deblend detected sources
 
-            source_morph = am.source_morphology(
-                image, "RealSim", FILT_WHEEL, deblend_seg, sky_background
-            )  # Calculate morphological parameters using statmorph with deblended segmap
-
-        else:
-            source_morph = am.source_morphology(
-                image, "RealSim", seg, sky_background
-            )  # Calculate morphological parameters using statmorph with original segmap
+        source_morph = am.source_morphology(
+            image,
+            input_ext_name="RealSim",
+            segm_obj=seg,
+            errmap=errmap,
+            bkg=sky_background,
+            gain=gain,
+        )  # Calculate morphological parameters using statmorph with chosen segmap
 
         am.save_morph_params(
             image, source_morph, **MORPH_PARAMS
