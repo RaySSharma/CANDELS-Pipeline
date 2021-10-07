@@ -113,6 +113,23 @@ def deblend_sources(input_name, segm_obj, kernel, errmap, input_ext_name, gain=2
     output_hdu(input_name, "DEBLEND_PROPS", props_table, table=True)
     return segm_obj
 
+def mask_agn(in_image, input_ext_name, sigma=1e4):
+    from photutils.detection import find_peaks
+    from astropy.stats import sigma_clipped_stats
+
+    with fits.open(in_image) as fo:
+        data = fo[input_ext_name].data
+    mask = np.zeros_like(data)
+
+    _, median, std = sigma_clipped_stats(data, sigma=sigma)
+    threshold = median + (5 * std)
+    tbl = find_peaks(data, threshold, box_size=11)
+
+    xx = np.asarray(tbl['x_peak'])
+    yy = np.asarray(tbl['y_peak'])
+    mask[xx, yy] = 1
+    mask = mask.astype(bool)
+    return mask
 
 # Run morphology code
 def source_morphology(
