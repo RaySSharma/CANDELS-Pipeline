@@ -69,7 +69,7 @@ GENERATE_REALSIM = False
 GENERATE_SEG = True
 DEBLEND = True
 GENERATE_MORPH = True
-MASK_AGN = True
+FILL_BRIGHT_PIXELS = True
 
 
 def choose_candels_field():
@@ -125,20 +125,20 @@ if __name__ == "__main__":
                 gain=gain,
             )  # Deblend detected sources
 
-        if MASK_AGN:
-            mask = am.mask_agn(image, "RealSim", sigma=1e4)
+        if FILL_BRIGHT_PIXELS:
+            am.fill_bright_pixels(image, "RealSim")
+            extname = "RealSim_Smooth"
         else:
-            mask = None
+            extname = "RealSim"
 
         source_morph = am.source_morphology(
             image,
-            input_ext_name="RealSim",
+            input_ext_name=extname,
             segm_obj=seg,
             errmap=errmap,
             bkg=sky_background,
             gain=gain,
-            mask=mask,
-            sersic_maxiter=1000
+            sersic_maxiter=1000,
         )  # Calculate morphological parameters using statmorph with chosen segmap
 
         am.save_morph_params(

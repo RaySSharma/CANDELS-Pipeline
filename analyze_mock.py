@@ -18,14 +18,14 @@ def detect_sources(input_name, input_ext_name, gain=2.4, photfnu=1.5e-07):
     with fits.open(input_name) as f:
         data = f[input_ext_name].data
         header = f[input_ext_name].header
-    
+
     try:
-        photfnu = header['PHOTFNU']
+        photfnu = header["PHOTFNU"]
     except KeyError:
         pass
 
     # Convert nJy to counts
-    data /= (1e9 * photfnu * gain)
+    data /= 1e9 * photfnu * gain
 
     # build kernel for pre-filtering.  How big?
     # don't assume redshift knowledge here
@@ -40,9 +40,13 @@ def detect_sources(input_name, input_ext_name, gain=2.4, photfnu=1.5e-07):
     kernel = Gaussian2DKernel(sigma, x_size=nsize, y_size=nsize)
 
     bkg_estimator = photutils.background.MedianBackground()
-    bkg = photutils.Background2D(data, (25, 25), filter_size=(3, 3), bkg_estimator=bkg_estimator)
+    bkg = photutils.Background2D(
+        data, (25, 25), filter_size=(3, 3), bkg_estimator=bkg_estimator
+    )
     thresh = bkg.background + (1.3 * bkg.background_rms)
-    segmap_obj = photutils.detect_sources(data, thresh, npixels=16, filter_kernel=kernel)
+    segmap_obj = photutils.detect_sources(
+        data, thresh, npixels=16, filter_kernel=kernel
+    )
 
     # No segmap found
     if segmap_obj is None:
@@ -73,18 +77,20 @@ def detect_sources(input_name, input_ext_name, gain=2.4, photfnu=1.5e-07):
 
 
 # Run PhotUtils Deblender
-def deblend_sources(input_name, segm_obj, kernel, errmap, input_ext_name, gain=2.4, photfnu=1.5e-07):
+def deblend_sources(
+    input_name, segm_obj, kernel, errmap, input_ext_name, gain=2.4, photfnu=1.5e-07
+):
     with fits.open(input_name) as f:
         data = f[input_ext_name].data
         header = f[input_ext_name].header
-    
+
     try:
-        photfnu = header['PHOTFNU']
+        photfnu = header["PHOTFNU"]
     except KeyError:
         pass
 
     # Convert nJy to counts
-    data /= (1e9 * photfnu * gain)
+    data /= 1e9 * photfnu * gain
 
     # No segmap found, cannot deblend
     if segm_obj is None:
@@ -113,27 +119,37 @@ def deblend_sources(input_name, segm_obj, kernel, errmap, input_ext_name, gain=2
     output_hdu(input_name, "DEBLEND_PROPS", props_table, table=True)
     return segm_obj
 
-def mask_agn(in_image, input_ext_name, sigma=1e4):
+
+def fill_bright_pixels(in_image, input_ext_name, sigma=1e4):
     from photutils.detection import find_peaks
     from astropy.stats import sigma_clipped_stats
 
     with fits.open(in_image) as fo:
         data = fo[input_ext_name].data
-    mask = np.zeros_like(data)
+        header = fo[input_ext_name].header
 
     _, median, std = sigma_clipped_stats(data, sigma=sigma)
     threshold = median + (5 * std)
     tbl = find_peaks(data, threshold, box_size=11)
 
-    xx = np.asarray(tbl['x_peak'])
-    yy = np.asarray(tbl['y_peak'])
-    mask[xx, yy] = 1
-    mask = mask.astype(bool)
-    return mask
+    xx = np.asarray(tbl["x_peak"])
+    yy = np.asarray(tbl["y_peak"])
+    for (x, y) in zip(*[xx, yy]):
+        window = data[x - 1 : x, y - 1 : y]
+        data[xx, yy] = np.median(window)
+    output_hdu(in_image, "REALSIM_SMOOTH", data, header)
+
 
 # Run morphology code
 def source_morphology(
-    in_image, input_ext_name, segm_obj=None, errmap=None, bkg=None, gain=2.4, photfnu=1.5e-07, **kwargs
+    in_image,
+    input_ext_name,
+    segm_obj=None,
+    errmap=None,
+    bkg=None,
+    gain=2.4,
+    photfnu=1.5e-07,
+    **kwargs
 ):
     from scipy.stats import mode
 
@@ -142,7 +158,7 @@ def source_morphology(
             try:
                 segm_obj = SegmentationImage(fo["DEBLEND"].data)
                 errmap = fo["WEIGHT_MAP"].data
-                #seg_props = fo["DEBLEND_PROPS"].data
+                # seg_props = fo["DEBLEND_PROPS"].data
             except KeyError as err:
                 print(err, "-", "Segmaps not in fits file")
                 return None
@@ -152,17 +168,20 @@ def source_morphology(
         header = fo[input_ext_name].header
 
     try:
-        photfnu = header['PHOTFNU']
+        photfnu = header["PHOTFNU"]
     except KeyError:
         pass
 
     # Convert nJy to counts
-    im /= (1e9 * photfnu * gain)
-    
+    im /= 1e9 * photfnu * gain
+
     if bkg is None:
         import photutils
+
         bkg_estimator = photutils.background.MedianBackground()
-        bkg = photutils.Background2D(im, (25, 25), filter_size=(3, 3), bkg_estimator=bkg_estimator)
+        bkg = photutils.Background2D(
+            im, (25, 25), filter_size=(3, 3), bkg_estimator=bkg_estimator
+        )
 
     im -= bkg.background
 
