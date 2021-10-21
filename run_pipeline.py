@@ -109,9 +109,15 @@ if __name__ == "__main__":
 
     gain = FILT_WHEEL["WFC3_F160W"][2]
 
+    if FILL_BRIGHT_PIXELS:
+        am.fill_bright_pixels(image, "RealSim")
+        extname = "RealSim_Smooth"
+    else:
+        extname = "RealSim"
+
     if GENERATE_SEG:
         seg, errmap, kernel, sky_background = am.detect_sources(
-            image, input_ext_name="RealSim", gain=gain
+            image, input_ext_name=extname, gain=gain
         )  # Run source detection with photutils
 
     if GENERATE_MORPH:
@@ -121,15 +127,9 @@ if __name__ == "__main__":
                 segm_obj=seg,
                 kernel=kernel,
                 errmap=errmap,
-                input_ext_name="RealSim",
+                input_ext_name=extname,
                 gain=gain,
             )  # Deblend detected sources
-
-        if FILL_BRIGHT_PIXELS:
-            am.fill_bright_pixels(image, "RealSim")
-            extname = "RealSim_Smooth"
-        else:
-            extname = "RealSim"
 
         source_morph = am.source_morphology(
             image,

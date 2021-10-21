@@ -43,7 +43,7 @@ def detect_sources(input_name, input_ext_name, gain=2.4, photfnu=1.5e-07):
     bkg = photutils.Background2D(
         data, (25, 25), filter_size=(3, 3), bkg_estimator=bkg_estimator
     )
-    thresh = bkg.background + (1.3 * bkg.background_rms)
+    thresh = bkg.background + (1.5 * bkg.background_rms)
     segmap_obj = photutils.detect_sources(
         data, thresh, npixels=16, filter_kernel=kernel
     )
