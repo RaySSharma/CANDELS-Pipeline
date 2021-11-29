@@ -3,10 +3,8 @@ import analyze_mock as am
 import numpy as np
 import pathlib
 import warnings
-import tqdm
 import pandas as pd
 from astropy.io.fits.verify import VerifyWarning
-
 warnings.simplefilter("ignore", category=VerifyWarning)
 
 # List of morphological parameters to calculate in statmorph
@@ -35,24 +33,29 @@ image_files = pathlib.Path(image_loc).glob("*.fits")
 out_file = "/scratch/rss230/AGN-Mergers/data/morphological_fits.h5"
 
 data = []
-for image_mock in tqdm.tqdm(image_files):
 
-    halo_num = int(image_mock.name.split('.')[0][1:])
-    timestep = int(image_mock.name.split('.')[1])
+def calc_morphology(fname):
+    image_name = fname.name
 
+    halo_num = int(image_name.split('.')[0][1:])
+    timestep = int(image_name.split('.')[1])
+
+    morph_values = np.full(len(morph_params), np.nan)
     try:
         source_morph = am.source_morphology(
-            image_mock, input_ext_name="RealSim",
+            fname, input_ext_name="RealSim_Smooth",
         )  # Calculate morphological parameters using statmorph
 
         if source_morph is not None:
             morph_values = [source_morph[value] for key, value in morph_params.items()]
-            data.append([halo_num, timestep, *morph_values])
+        print(image_name)
+        return [halo_num, timestep, *morph_values]
 
     except (KeyError, IndexError, AttributeError, ValueError, TypeError) as err:
-        print(err, "-", image_mock, "not processed, skipping fit.")
-        continue
+        print(err, "-", image_name, "not processed, skipping fit.")
+        return [halo_num, timestep, *morph_values]
 
-data = np.asarray(data).T
-df = pd.DataFrame(data, columns=['halo_num', 'timestep', *list(morph_params.keys())])
-df.to_hdf(out_file, key='data')
+data = [calc_morphology(fname) for fname in image_files]
+
+df = pd.DataFrame(np.asarray(data), columns=['halo_num', 'timestep', *list(morph_params.keys())])
+df.to_hdf(out_file, key='run2')
