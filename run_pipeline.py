@@ -59,6 +59,7 @@ MORPH_PARAMS = {
     "M": "multimode",
     "D": "deviation",
     "I": "intensity",
+    "SN": "sn_per_pixel",
     "FLAG": "flag",
     "FLAG_SERSIC": "flag_sersic",
 }
