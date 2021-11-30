@@ -49,13 +49,13 @@ def calc_morphology(fname):
         if source_morph is not None:
             morph_values = [source_morph[value] for key, value in morph_params.items()]
         print(image_name)
-        return [halo_num, timestep, *morph_values]
+        return [image_name, halo_num, timestep, *morph_values]
 
     except (KeyError, IndexError, AttributeError, ValueError, TypeError) as err:
         print(err, "-", image_name, "not processed, skipping fit.")
-        return [halo_num, timestep, *morph_values]
+        return [image_name, halo_num, timestep, *morph_values]
 
 data = [calc_morphology(fname) for fname in image_files]
 
-df = pd.DataFrame(np.asarray(data), columns=['halo_num', 'timestep', *list(morph_params.keys())])
-df.to_hdf(out_file, key='run2')
+df = pd.DataFrame(np.asarray(data), columns=['filename', 'halo_num', 'timestep', *list(morph_params.keys())])
+df.to_hdf(out_file, key='data')
